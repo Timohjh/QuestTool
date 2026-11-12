@@ -2,11 +2,13 @@
 
 A Windows app for managing Meta Quest headsets over USB or Wi-Fi. Install an APK on several headsets, transfer files, check device status, read logs, and open a live view.
 
+**[Download for Windows (x64)](https://github.com/Timohjh/QuestTool/releases/download/preview-2026-11-12/QuestTool-windows.zip)** · [Release notes](https://github.com/Timohjh/QuestTool/releases/tag/preview-2026-11-12)
+
 ![Headsets](docs/screenshots/headsets.png)
 
 ## Download and run
 
-1. Download **QuestTool-windows.zip** from [Releases](https://github.com/Timohjh/QuestTool/releases).
+1. Download [QuestTool-windows.zip](https://github.com/Timohjh/QuestTool/releases/download/preview-2026-11-12/QuestTool-windows.zip).
 2. Install the **.NET 10 Windows Desktop Runtime (x64)** from [Microsoft](https://dotnet.microsoft.com/download/dotnet/10.0). The runtime is enough; you don't need the SDK to run the app.
 3. Extract the ZIP into a folder and open **QuestTool.exe**. Keep the files in that folder together.
 4. Install [Android SDK Platform-Tools](https://developer.android.com/tools/releases/platform-tools). If QuestTool doesn't find ADB automatically, open **Setup** and select `adb.exe`. Keep ADB's DLLs beside it.
