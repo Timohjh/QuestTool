@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>QuestTool</AssemblyName>
+    <ApplicationIcon>Assets/QuestTool.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup><Compile Remove="Tests/**/*.cs" /></ItemGroup>
+  <ItemGroup><Resource Include="Assets/QuestTool.ico" /><Resource Include="Assets/QuestTool.png" /></ItemGroup>
+</Project>

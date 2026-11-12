@@ -1,0 +1,36 @@
+bin/
+obj/
+.vs/
+TestResults/
+*.user
+.dotnet/
+
+# Local outputs, device data, and developer state
+artifacts/
+publish/
+.idea/
+.vscode/
+.codex/
+.agents/
+settings.json
+settings.json.tmp
+*.log
+*.mp4
+*.apk
+*.aab
+*.obb
+*.part
+*.pdb
+
+# Credentials and signing material must never be published
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+*.p12
+*.jks
+*.keystore
+adbkey*
+NuGet.Config
+nuget.config

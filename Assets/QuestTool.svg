@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <title>QuestTool</title>
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#22394D"/>
+      <stop offset="1" stop-color="#101C2B"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="54" fill="url(#tile)" stroke="#365168" stroke-width="2"/>
+  <path fill="#A4F0D5" fill-rule="evenodd" d="M194 116a76 76 0 1 1-152 0 76 76 0 1 1 152 0ZM164 116a46 46 0 1 0-92 0 46 46 0 1 0 92 0Z"/>
+  <path d="M159 157 199 197" fill="none" stroke="#A4F0D5" stroke-width="30" stroke-linecap="round"/>
+</svg>

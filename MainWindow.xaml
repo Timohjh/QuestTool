@@ -1,0 +1,249 @@
+<Window x:Class="QuestTool.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="QuestTool" Icon="Assets/QuestTool.ico" Width="1220" Height="860" MinWidth="1000" MinHeight="720" Background="#0E1621" Foreground="#EEF3F9" FontFamily="Segoe UI" FontSize="14" Closing="OnClosing">
+  <Grid Margin="28,22">
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+    <DockPanel Margin="0,0,0,22">
+      <Border DockPanel.Dock="Right" Background="#203A3E" CornerRadius="6" Padding="12,8" VerticalAlignment="Center"><TextBlock Text="LOCAL NETWORK  /  ADB" Foreground="#89E2C6" FontSize="12" FontWeight="SemiBold"/></Border>
+      <StackPanel Orientation="Horizontal"><Image Source="Assets/QuestTool.png" Width="54" Height="54" Margin="0,0,14,0" VerticalAlignment="Center"/><StackPanel><TextBlock Text="QuestTool" FontSize="30" FontWeight="SemiBold"/><TextBlock Text="Your headset fleet. One deployment." Foreground="{StaticResource Muted}" Margin="0,4,0,0"/></StackPanel></StackPanel>
+    </DockPanel>
+    <TabControl x:Name="Tabs" Grid.Row="1" Background="#0E1621" BorderThickness="0" SelectionChanged="FilesTabSelected">
+      <TabItem Header="Headsets">
+        <Grid Margin="0,20,0,0">
+          <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+          <StackPanel x:Name="DeviceControls">
+            <WrapPanel Margin="0,0,0,12"><Button Content="Refresh &amp; reconnect" Click="RefreshClick"/><Button Content="Enable Wi-Fi for selected USB headsets" Click="EnableWifiClick"/><Button Content="Forget selected" Click="ForgetClick"/></WrapPanel>
+            <CheckBox x:Name="AutoWifiBox" Content="Automatically enable wireless ADB over USB and reconnect remembered headsets" IsChecked="True" Click="AutoWifiChanged" Margin="0,0,0,14"/>
+            <Border Background="{StaticResource Panel}" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+              <StackPanel>
+                <TextBlock Text="Find headsets on your network" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                <WrapPanel><TextBox x:Name="SubnetBox" Width="200" Margin="0,0,8,8" ToolTip="IPv4 subnet (/22 through /32). Scans ADB port 5555."/><Button Content="Scan network" Click="ScanClick" Margin="0,0,20,8"/><TextBox x:Name="EndpointBox" Width="210" Margin="0,0,8,8" ToolTip="Headset IPv4:port, e.g. 192.168.1.42:5555"/><Button Content="Connect IP:port" Click="ConnectClick" Margin="0,0,0,8"/></WrapPanel>
+                <TextBlock Text="Only headsets with wireless ADB enabled can be found. Use a subnet you manage; guest Wi-Fi isolation can block discovery." Foreground="{StaticResource Muted}" TextWrapping="Wrap" FontSize="12"/>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+          <DockPanel Grid.Row="1" Margin="0,0,0,10"><TextBlock x:Name="FleetCount" DockPanel.Dock="Right" Foreground="{StaticResource Muted}"/><StackPanel Orientation="Horizontal"><Button Content="Select all" Padding="12,6" Click="SelectAllClick"/><Button Content="Select none" Padding="12,6" Click="SelectNoneClick"/><TextBlock Text="Double-click a name to rename it." Foreground="{StaticResource Muted}" VerticalAlignment="Center" Margin="8,0,0,0"/></StackPanel></DockPanel>
+          <DataGrid x:Name="HeadsetGrid" Grid.Row="2" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" HeadersVisibility="Column" GridLinesVisibility="None" Background="{StaticResource Panel}" BorderThickness="0" SelectionMode="Single" RowHeaderWidth="0" CellEditEnding="NameEdited">
+            <DataGrid.Columns>
+              <DataGridTemplateColumn Header="Use" Width="54"><DataGridTemplateColumn.CellTemplate><DataTemplate><CheckBox IsChecked="{Binding Selected, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center"/></DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
+              <DataGridTextColumn Header="Headset name" Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
+              <DataGridTextColumn Header="Model" Binding="{Binding Model}" IsReadOnly="True" Width="100"/>
+              <DataGridTextColumn Header="Serial" Binding="{Binding Serial}" IsReadOnly="True" Width="160"/>
+              <DataGridTextColumn Header="Wi-Fi endpoint" Binding="{Binding Endpoint}" IsReadOnly="True" Width="180"/>
+              <DataGridTextColumn Header="Connection" Binding="{Binding Connection}" IsReadOnly="True" Width="110"/>
+              <DataGridTextColumn Header="Wireless setup" Binding="{Binding WifiStatus}" IsReadOnly="True" Width="190"><DataGridTextColumn.ElementStyle><Style TargetType="TextBlock"><Setter Property="TextWrapping" Value="Wrap"/></Style></DataGridTextColumn.ElementStyle></DataGridTextColumn>
+            </DataGrid.Columns>
+          </DataGrid>
+        </Grid>
+      </TabItem>
+      <TabItem Header="Monitoring" x:Name="MonitorTab">
+        <Grid Margin="0,20,0,0">
+          <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+          <WrapPanel x:Name="MonitorControls" Margin="0,0,0,14"><Button Content="Check devices now" Click="MonitorRefreshClick"/><CheckBox x:Name="MonitorAuto" Content="Auto-check every 15 seconds while this tab is open" IsChecked="True"/></WrapPanel>
+          <DataGrid x:Name="MonitorGrid" Grid.Row="1" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True" HeadersVisibility="Column" GridLinesVisibility="None" Background="{StaticResource Panel}" BorderThickness="0" RowHeaderWidth="0" SelectionMode="Single" SelectionChanged="MonitorSelectionChanged" RowDetailsVisibilityMode="VisibleWhenSelected">
+            <DataGrid.RowDetailsTemplate><DataTemplate><Expander Header="CPU, GPU, memory, temperatures &amp; system details" IsExpanded="True" Margin="16,8,16,16"><ItemsControl ItemsSource="{Binding Details}" Margin="0,12,0,0"><ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel MaxWidth="1080"/></ItemsPanelTemplate></ItemsControl.ItemsPanel><ItemsControl.ItemTemplate><DataTemplate><StackPanel Width="250" Margin="0,0,16,12"><TextBlock Text="{Binding Name}" Foreground="{StaticResource Muted}" FontSize="12"/><TextBlock Text="{Binding Value}" TextWrapping="Wrap" Margin="0,3,0,0"/></StackPanel></DataTemplate></ItemsControl.ItemTemplate></ItemsControl></Expander></DataTemplate></DataGrid.RowDetailsTemplate>
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Headset" Binding="{Binding Name}" Width="*" MinWidth="140"/>
+              <DataGridTextColumn Header="Connection" Binding="{Binding Connection}" Width="110"/>
+              <DataGridTextColumn Header="Battery" Binding="{Binding Battery}" Width="140"/>
+              <DataGridTextColumn Header="Storage" Binding="{Binding Storage}" Width="190"/>
+              <DataGridTextColumn Header="Wi-Fi network" Binding="{Binding Network}" Width="150"/>
+              <DataGridTextColumn Header="Last seen" Binding="{Binding LastSeen}" Width="160"/>
+              <DataGridTextColumn Header="Check result" Binding="{Binding MonitorStatus}" Width="150"/>
+            </DataGrid.Columns>
+          </DataGrid>
+          <StackPanel Grid.Row="2" Margin="0,12,0,0"><TextBlock Text="Last seen records a successful identity check. Metrics are current only when the check result is Updated. Automatic checks pause during other operations." Foreground="{StaticResource Muted}" TextWrapping="Wrap"/><Button Content="Cancel operation" Click="CancelClick" HorizontalAlignment="Left" Margin="0,10,0,0"/></StackPanel>
+        </Grid>
+      </TabItem>
+      <TabItem Header="Device logs" x:Name="DeviceLogsTab">
+        <Grid Margin="0,20,0,0">
+          <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+          <WrapPanel x:Name="DeviceLogControls" Margin="0,0,0,12">
+            <ComboBox x:Name="DeviceLogHeadsetBox" Width="240" DisplayMemberPath="Name" SelectionChanged="DeviceLogHeadsetChanged" Margin="0,0,8,8"/>
+            <ComboBox x:Name="DeviceLogPriorityBox" Width="130" SelectedIndex="2" Margin="0,0,8,8"><ComboBoxItem Content="Verbose" Tag="V"/><ComboBoxItem Content="Debug" Tag="D"/><ComboBoxItem Content="Info" Tag="I"/><ComboBoxItem Content="Warning" Tag="W"/><ComboBoxItem Content="Error" Tag="E"/><ComboBoxItem Content="Fatal" Tag="F"/></ComboBox>
+            <Button Content="Read logs" Click="DeviceLogRefreshClick" Margin="0,0,8,8"/><Button Content="Save logs…" Click="SaveDeviceLogClick" Margin="0,0,8,8"/>
+            <CheckBox x:Name="DeviceLogAuto" Content="Auto-refresh every 5 seconds" Margin="0,0,0,8"/>
+          </WrapPanel>
+          <DockPanel Grid.Row="1" Margin="0,0,0,12"><TextBlock Text="Find text" DockPanel.Dock="Left" VerticalAlignment="Center" Margin="0,0,12,0"/><TextBox x:Name="DeviceLogFilterBox" TextChanged="DeviceLogFilterChanged" ToolTip="Case-insensitive filter of the captured lines."/></DockPanel>
+          <TextBox x:Name="DeviceLogBox" Grid.Row="2" IsReadOnly="True" FontFamily="Consolas" FontSize="12" TextWrapping="NoWrap" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
+          <StackPanel Grid.Row="3" Margin="0,12,0,0"><TextBlock x:Name="DeviceLogStatus" Text="Choose a headset and read its recent Android logs (up to 1,000 lines)." Foreground="{StaticResource Muted}" TextWrapping="Wrap"/><Button Content="Cancel operation" Click="CancelClick" HorizontalAlignment="Left" Margin="0,10,0,0"/></StackPanel>
+        </Grid>
+      </TabItem>
+      <TabItem Header="Wi-Fi" x:Name="WifiTab">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,20,0,0">
+          <StackPanel x:Name="WifiControls">
+            <TextBlock Text="Change headset Wi-Fi" FontSize="22" FontWeight="SemiBold"/>
+            <TextBlock Text="Choose a headset to see its current Wi-Fi and scan nearby networks. To change networks, select the target headsets in Headsets and keep each connected by USB." Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,8,0,16"/>
+            <WrapPanel Margin="0,0,0,12"><ComboBox x:Name="WifiHeadsetBox" Width="300" SelectionChanged="WifiHeadsetChanged" Margin="0,0,12,0"><ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Name}" Foreground="#101925"/></DataTemplate></ComboBox.ItemTemplate></ComboBox><Button Content="Scan available networks" Click="ScanWifiClick"/><Button Content="Open headset Wi-Fi settings" Click="OpenHeadsetWifiClick"/></WrapPanel>
+            <Border Background="{StaticResource Panel}" CornerRadius="8" Padding="16" Margin="0,0,0,16"><StackPanel><TextBlock Text="Currently connected" FontWeight="SemiBold"/><TextBlock x:Name="CurrentWifiText" Text="Choose a headset to load its current network." TextWrapping="Wrap" Foreground="{StaticResource Muted}" Margin="0,6,0,0"/></StackPanel></Border>
+            <TextBlock Text="Available network (or type a hidden SSID)" Margin="0,0,0,6"/><ComboBox x:Name="WifiSsidBox" IsEditable="True" TextSearch.TextPath="Ssid" HorizontalAlignment="Left" Width="650" Margin="0,0,0,8" SelectionChanged="WifiNetworkChanged"><ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Description}" Foreground="#101925"/></DataTemplate></ComboBox.ItemTemplate></ComboBox>
+            <TextBlock x:Name="WifiScanStatus" Text="Scan results come from the selected headset." Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,0,0,16"/>
+            <TextBlock Text="Security" Margin="0,0,0,6"/><ComboBox x:Name="WifiSecurityBox" Width="240" HorizontalAlignment="Left" SelectedIndex="0" Margin="0,0,0,16" SelectionChanged="WifiSecurityChanged"><ComboBoxItem Tag="wpa2"><TextBlock Text="WPA2 Personal" Foreground="#101925"/></ComboBoxItem><ComboBoxItem Tag="wpa3"><TextBlock Text="WPA3 Personal" Foreground="#101925"/></ComboBoxItem><ComboBoxItem Tag="open"><TextBlock Text="Open" Foreground="#101925"/></ComboBoxItem></ComboBox>
+            <TextBlock Text="Password" Margin="0,0,0,6"/><PasswordBox x:Name="WifiPasswordBox" Width="440" HorizontalAlignment="Left" Padding="10,8" Margin="0,0,0,20"/>
+            <Button Content="Change Wi-Fi for selected headsets" Click="ChangeWifiClick" HorizontalAlignment="Left"/>
+            <TextBlock Text="Passwords are not saved by QuestTool. Wireless ADB reconnects automatically after a successful network change when auto-connect is enabled. Enterprise authentication, captive portals, and firmware-restricted networks require setup inside the headset." Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,16,0,0"/>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+      <TabItem Header="Deploy">
+        <Grid Margin="0,20,0,0">
+          <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+          <Border x:Name="DropZone" AllowDrop="True" DragOver="FilesDragOver" Drop="FilesDrop" BorderBrush="#4B8E94" BorderThickness="2" Background="#142A32" CornerRadius="10" Padding="24" Margin="0,0,0,14">
+            <StackPanel>
+              <TextBlock Text="Drop an APK + optional OBB files" FontSize="22" FontWeight="SemiBold"/>
+              <TextBlock Text="One standalone APK, plus a main and/or patch OBB. Drop a new APK to replace this deployment." Foreground="{StaticResource Muted}" Margin="0,6,0,14" TextWrapping="Wrap"/>
+              <WrapPanel x:Name="FileControls"><Button Content="Choose APK" Click="ChooseApkClick"/><Button Content="Add OBB files" Click="ChooseObbClick"/><Button Content="Clear files" Click="ClearFilesClick"/></WrapPanel>
+              <TextBlock x:Name="PackageSummary" Text="No APK selected" Margin="0,14,0,0" FontWeight="SemiBold" TextWrapping="Wrap"/>
+              <TextBlock x:Name="FileSummary" Foreground="{StaticResource Muted}" Margin="0,5,0,0" TextWrapping="Wrap"/>
+            </StackPanel>
+          </Border>
+          <StackPanel Grid.Row="1" Margin="0,0,0,14">
+            <WrapPanel Margin="0,0,0,12"><Button x:Name="DeployButton" Content="Deploy to selected headsets" Click="DeployClick" Background="#257968"/><Button x:Name="RetryButton" Content="Retry failed / cancelled" Click="RetryClick"/><Button x:Name="CancelButton" Content="Cancel operation" Click="CancelClick" IsEnabled="False"/></WrapPanel>
+            <CheckBox x:Name="WaitOffline" Content="Wait up to 30 minutes for selected offline headsets (while this app stays open)" IsChecked="True"/>
+            <TextBlock Text="Two installs at a time. Updates preserve app data. APK + OBB deployment is not atomic; partial updates are reported." Foreground="{StaticResource Muted}" FontSize="12" Margin="0,8,0,0" TextWrapping="Wrap"/>
+          </StackPanel>
+          <DataGrid x:Name="DeployGrid" Grid.Row="2" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True" HeadersVisibility="Column" GridLinesVisibility="None" Background="{StaticResource Panel}" BorderThickness="0" RowHeaderWidth="0">
+            <DataGrid.Columns>
+              <DataGridTemplateColumn Header="Use" Width="54"><DataGridTemplateColumn.CellTemplate><DataTemplate><CheckBox IsChecked="{Binding Selected, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center"/></DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
+              <DataGridTextColumn Header="Headset" Binding="{Binding Name}" Width="160"/>
+              <DataGridTextColumn Header="Connection" Binding="{Binding Connection}" Width="110"/>
+              <DataGridTextColumn Header="Installed code" Binding="{Binding Version}" Width="115"/>
+              <DataGridTemplateColumn Header="Activity" Width="85"><DataGridTemplateColumn.CellTemplate><DataTemplate><ProgressBar Height="5" Width="50" IsIndeterminate="{Binding Active}" Maximum="1" Value="0" Background="#29415A" Foreground="#89E2C6" BorderThickness="0"/></DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
+              <DataGridTextColumn Header="Deployment result" Binding="{Binding Result}" Width="*"><DataGridTextColumn.ElementStyle><Style TargetType="TextBlock"><Setter Property="TextWrapping" Value="Wrap"/></Style></DataGridTextColumn.ElementStyle></DataGridTextColumn>
+            </DataGrid.Columns>
+          </DataGrid>
+        </Grid>
+      </TabItem>
+      <TabItem Header="Files" x:Name="FilesTab">
+        <Grid Margin="0,20,0,0">
+          <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+          <StackPanel Grid.Row="0" Margin="0,0,0,16">
+            <TextBlock Text="Headset files" FontSize="22" FontWeight="SemiBold"/>
+            <TextBlock Text="Choose one headset. Browse and transfer files over its USB or Wi-Fi connection." Foreground="{StaticResource Muted}" Margin="0,6,0,0"/>
+          </StackPanel>
+          <DockPanel x:Name="FileTargetControls" Grid.Row="1" Margin="0,0,0,12">
+            <Button DockPanel.Dock="Right" Content="Refresh headsets" Click="RefreshClick" Margin="12,0,0,0"/>
+            <ComboBox x:Name="FileConnectionBox" DockPanel.Dock="Right" Width="170" Margin="12,0,0,0" SelectedIndex="0" VerticalContentAlignment="Center" SelectionChanged="FileConnectionChanged" ToolTip="Auto prefers a verified USB connection, otherwise Wi-Fi.">
+              <ComboBoxItem Content="Auto (USB first)"/><ComboBoxItem Content="USB"/><ComboBoxItem Content="Wi-Fi"/>
+            </ComboBox>
+            <TextBlock DockPanel.Dock="Left" Text="Headset" VerticalAlignment="Center" Margin="0,0,12,0"/>
+            <ComboBox x:Name="FileHeadsetBox" MinWidth="260" HorizontalAlignment="Left" VerticalContentAlignment="Center" SelectionChanged="FileHeadsetChanged">
+              <ComboBox.ItemTemplate><DataTemplate><StackPanel Orientation="Horizontal"><TextBlock Text="{Binding Name}" Foreground="#101925"/><TextBlock Text="{Binding Connection, StringFormat=  ·  {0}}" Foreground="#42546A"/></StackPanel></DataTemplate></ComboBox.ItemTemplate>
+            </ComboBox>
+          </DockPanel>
+          <DockPanel x:Name="FilePathControls" Grid.Row="2" Margin="0,0,0,12">
+            <Button DockPanel.Dock="Right" Content="Go" Click="FileGoClick" Margin="8,0,0,0"/>
+            <Button DockPanel.Dock="Right" Content="Refresh" Click="FileRefreshClick" Margin="8,0,0,0"/>
+            <Button DockPanel.Dock="Left" Content="Storage" Click="FileRootClick"/>
+            <Button DockPanel.Dock="Left" Content="Up" Click="FileUpClick"/>
+            <TextBox x:Name="FilePathBox" Text="/sdcard" KeyDown="FilePathKeyDown" ToolTip="Headset path under /sdcard. Press Enter to open."/>
+          </DockPanel>
+          <WrapPanel x:Name="FileActionControls" Grid.Row="3" Margin="0,0,0,12">
+            <Button Content="Upload files…" Click="UploadFilesClick" Margin="0,0,8,8"/>
+            <Button Content="Upload folder…" Click="UploadFolderClick" Margin="0,0,8,8"/>
+            <Button Content="Download…" Click="DownloadFileClick" Margin="0,0,8,8"/>
+            <Button Content="New folder…" Click="NewFolderClick" Margin="0,0,8,8"/>
+            <Button Content="Rename…" Click="RenameFileClick" Margin="0,0,8,8"/>
+            <Button Content="Move…" Click="MoveFileClick" Margin="0,0,8,8"/>
+            <Button Content="Delete…" Click="DeleteFileClick" Background="#663C47" Margin="0,0,8,8"/>
+          </WrapPanel>
+          <DataGrid x:Name="FilesGrid" Grid.Row="4" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True" HeadersVisibility="Column" GridLinesVisibility="None" Background="{StaticResource Panel}" BorderThickness="0" RowHeaderWidth="0" SelectionMode="Single" SelectionUnit="FullRow" MouseDoubleClick="FileDoubleClick">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*"/>
+              <DataGridTextColumn Header="Type" Binding="{Binding Kind}" Width="110"/>
+              <DataGridTextColumn Header="Size" Binding="{Binding SizeText}" Width="130"/>
+              <DataGridTextColumn Header="Date modified" Binding="{Binding ModifiedText}" Width="170"/>
+            </DataGrid.Columns>
+          </DataGrid>
+          <StackPanel Grid.Row="5" Margin="0,12,0,0">
+            <ProgressBar x:Name="FileTransferBar" Height="6" Minimum="0" Maximum="100" Foreground="#89E2C6" Background="#29415A" BorderThickness="0" Visibility="Collapsed" Margin="0,0,0,10"/>
+            <TextBlock x:Name="FileBrowserStatus" Text="Choose a headset to browse its shared storage." Foreground="{StaticResource Muted}" TextWrapping="Wrap"/>
+            <TextBlock Text="Double-click a folder to open it. System and private app storage remain subject to headset permissions." Foreground="{StaticResource Muted}" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"/>
+            <Button x:Name="FileCancelButton" Content="Cancel file operation" Click="CancelClick" IsEnabled="False" HorizontalAlignment="Left" Margin="0,10,0,0" Padding="12,6"/>
+          </StackPanel>
+        </Grid>
+      </TabItem>
+      <TabItem Header="Video" x:Name="MediaTab">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,20,0,0">
+          <StackPanel>
+            <TextBlock Text="Live view &amp; recording" FontSize="22" FontWeight="SemiBold"/>
+            <TextBlock Text="Stream one headset to a native Meta casting window on this PC, or save an MP4 recording." Foreground="{StaticResource Muted}" Margin="0,6,0,18" TextWrapping="Wrap"/>
+            <DockPanel x:Name="MediaTargetControls" Margin="0,0,0,18">
+              <Button DockPanel.Dock="Right" Content="Refresh headsets" Click="RefreshClick" Margin="12,0,0,0"/>
+              <ComboBox x:Name="MediaConnectionBox" Foreground="#101925" DockPanel.Dock="Right" Width="170" Margin="12,0,0,0" SelectedIndex="0" VerticalContentAlignment="Center">
+                <ComboBoxItem><TextBlock Text="Auto (USB first)" Foreground="#101925"/></ComboBoxItem><ComboBoxItem><TextBlock Text="USB" Foreground="#101925"/></ComboBoxItem><ComboBoxItem><TextBlock Text="Wi-Fi" Foreground="#101925"/></ComboBoxItem>
+              </ComboBox>
+              <TextBlock DockPanel.Dock="Left" Text="Headset" VerticalAlignment="Center" Margin="0,0,12,0"/>
+              <ComboBox x:Name="MediaHeadsetBox" MinWidth="260" HorizontalAlignment="Left" VerticalContentAlignment="Center" SelectionChanged="MediaHeadsetChanged">
+                <ComboBox.ItemTemplate><DataTemplate><StackPanel Orientation="Horizontal"><TextBlock Text="{Binding Name}" Foreground="#101925"/><TextBlock Text="{Binding Connection, StringFormat=  ·  {0}}" Foreground="#42546A"/></StackPanel></DataTemplate></ComboBox.ItemTemplate>
+              </ComboBox>
+            </DockPanel>
+            <Border Background="{StaticResource Panel}" CornerRadius="8" Padding="20" Margin="0,0,0,14">
+              <StackPanel>
+                <TextBlock Text="Stream to this PC" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                <StackPanel x:Name="MirrorSettingsPanel">
+                  <ComboBox x:Name="StreamingBackendBox" Width="330" HorizontalAlignment="Left" SelectedIndex="0" SelectionChanged="StreamingBackendChanged" Margin="0,0,0,12"><ComboBoxItem><TextBlock Text="Meta casting · standalone headset" Foreground="#101925"/></ComboBoxItem><ComboBoxItem><TextBlock Text="OculusMirror · Quest Link / Air Link" Foreground="#101925"/></ComboBoxItem></ComboBox>
+                  <StackPanel x:Name="MirrorOptionsPanel" Visibility="Collapsed" Margin="0,0,0,12">
+                    <TextBlock Text="OculusMirror displays the active PC-VR Link session. For an app running directly on a Quest, choose Meta casting." Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                    <WrapPanel Margin="0,0,0,10"><TextBlock Text="Size" VerticalAlignment="Center" Margin="0,0,8,0"/><TextBox x:Name="MirrorWidthBox" Text="1920" Width="85"/><TextBlock Text="×" VerticalAlignment="Center" Margin="8,0"/><TextBox x:Name="MirrorHeightBox" Text="1080" Width="85"/><TextBlock Text="Eye" VerticalAlignment="Center" Margin="16,0,8,0"/><ComboBox x:Name="MirrorEyeBox" SelectedIndex="1" Width="110"><ComboBoxItem><TextBlock Text="Left" Foreground="#101925"/></ComboBoxItem><ComboBoxItem><TextBlock Text="Right" Foreground="#101925"/></ComboBoxItem><ComboBoxItem><TextBlock Text="Both" Foreground="#101925"/></ComboBoxItem></ComboBox><TextBlock Text="FOV multiplier" VerticalAlignment="Center" Margin="16,0,8,0"/><TextBox x:Name="MirrorFovBox" Text="1.0" Width="70"/></WrapPanel>
+                    <WrapPanel><CheckBox x:Name="MirrorGuardianBox" Content="Guardian" IsChecked="True" Margin="0,0,20,0"/><CheckBox x:Name="MirrorNotificationsBox" Content="Notifications" IsChecked="True" Margin="0,0,20,0"/><CheckBox x:Name="MirrorGuiBox" Content="System UI" IsChecked="True"/></WrapPanel>
+                  </StackPanel>
+                </StackPanel>
+                <WrapPanel><Button x:Name="StreamStartButton" Content="Start live view" Click="StartStreamClick" Background="#257968"/><Button x:Name="StreamStopButton" Content="Stop live view" Click="StopStreamClick" IsEnabled="False"/><Button x:Name="StreamRefreshButton" Content="Refresh status" Click="RefreshStreamClick"/></WrapPanel>
+                <TextBlock x:Name="StreamingStatus" Text="Live view is stopped." Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,12,0,0"/>
+                <TextBlock Text="Meta casting: use the gear button in its window for resolution, bitrate, FPS, eye, aspect ratio, stabilization, and audio. OculusMirror: set the options above before starting. Close the window or click Stop live view to end the session." Foreground="{StaticResource Muted}" TextWrapping="Wrap" FontSize="12" Margin="0,8,0,0"/>
+              </StackPanel>
+            </Border>
+            <Border Background="{StaticResource Panel}" CornerRadius="8" Padding="20" Margin="0,0,0,14">
+              <StackPanel>
+                <TextBlock Text="Record video" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                <WrapPanel>
+                  <Button x:Name="RecordStartButton" Content="Start recording…" Click="StartRecordingClick" Background="#257968"/>
+                  <Button x:Name="RecordStopButton" Content="Stop &amp; save" Click="StopRecordingClick" IsEnabled="False"/>
+                  <ComboBox x:Name="RecordingSizeBox" Foreground="#101925" Width="170" SelectedIndex="0" VerticalContentAlignment="Center" Margin="0,0,8,0"><ComboBoxItem><TextBlock Text="1920 × 1080" Foreground="#101925"/></ComboBoxItem><ComboBoxItem><TextBlock Text="1280 × 720" Foreground="#101925"/></ComboBoxItem><ComboBoxItem><TextBlock Text="1024 × 1024" Foreground="#101925"/></ComboBoxItem></ComboBox>
+                  <Button Content="Open recordings" Click="OpenRecordingsClick"/>
+                </WrapPanel>
+                <TextBlock x:Name="RecordingStatus" Text="No recording in progress." Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,12,0,0"/>
+                <TextBlock Text="Video only. Headset recordings may stop automatically after 3 minutes; use Stop &amp; save to download the MP4. For casting with audio, use the record button in the live-view window." Foreground="{StaticResource Muted}" TextWrapping="Wrap" FontSize="12" Margin="0,8,0,0"/>
+              </StackPanel>
+            </Border>
+            <Border Background="{StaticResource Panel}" CornerRadius="8" Padding="20" Margin="0,0,0,14">
+              <StackPanel>
+                <TextBlock Text="Proximity sensor" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                <CheckBox x:Name="ProximityOffBox" Content="Turn off proximity sensor (keep headset awake)" IsThreeState="True" IsChecked="{x:Null}" Click="ProximityOffClick"/>
+                <TextBlock x:Name="ProximityStatus" Text="Not changed by QuestTool in this session. Click to disable, then click again to restore." Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,10,0,0"/>
+                <TextBlock Text="Applies to the headset selected above. QuestTool restores sensors it disabled when you close the app. Restore after use to avoid battery drain. Meta casting also manages proximity automatically." Foreground="{StaticResource Muted}" TextWrapping="Wrap" FontSize="12" Margin="0,8,0,0"/>
+              </StackPanel>
+            </Border>
+            <TextBlock x:Name="MediaStatus" Text="Meta casting uses the standalone Meta VR CLI casting client. OculusMirror uses an active Quest Link / Air Link session. Configure tools in Setup." Foreground="{StaticResource Muted}" TextWrapping="Wrap"/>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+      <TabItem Header="Setup" x:Name="SetupTab">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,20,0,0">
+          <StackPanel>
+            <Border Background="{StaticResource Panel}" CornerRadius="8" Padding="22" Margin="0,0,0,16">
+              <StackPanel><TextBlock Text="01  /  ADB on this PC" FontSize="20" FontWeight="SemiBold"/><TextBlock Text="QuestTool can use the ADB bundled with Meta VR Developer Hub, Android SDK Platform-Tools, or a copy on PATH. Keep adb.exe alongside its supplied DLLs." Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,8,0,14"/>
+                <DockPanel x:Name="AdbControls"><Button DockPanel.Dock="Right" Content="Choose adb.exe" Click="ChooseAdbClick" Margin="8,0,0,0"/><TextBox x:Name="AdbPathBox" IsReadOnly="True"/></DockPanel>
+                <WrapPanel Margin="0,12,0,0"><Button Content="Download Platform-Tools" Tag="https://developer.android.com/tools/releases/platform-tools" Click="OpenLinkClick"/><Button Content="Meta device setup" Tag="https://developers.meta.com/vr/documentation/native/android/mobile-device-setup" Click="OpenLinkClick"/></WrapPanel>
+              </StackPanel>
+            </Border>
+            <Border Background="{StaticResource Panel}" CornerRadius="8" Padding="22" Margin="0,0,0,16"><StackPanel><TextBlock Text="02  /  Prepare every headset" FontSize="20" FontWeight="SemiBold"/><TextBlock Text="1. Enable Developer Mode in the Meta Horizon mobile app. A verified developer account/team may be required.&#10;2. Connect the headset to this PC with a USB data cable. Install Meta's Windows ADB driver if USB detection fails.&#10;3. Inside the headset, accept USB debugging and select Always allow from this computer.&#10;4. Put the headset and PC on the same local network. Avoid guest/client isolation.&#10;5. In Headsets, click Refresh, tick the headset, then Enable Wi-Fi for selected USB headsets.&#10;6. Once Wi-Fi is confirmed, unplug USB. Repeat for the rest of your headsets." TextWrapping="Wrap" LineHeight="27" Foreground="{StaticResource Muted}" Margin="0,10,0,0"/></StackPanel></Border>
+            <Border Background="{StaticResource Panel}" CornerRadius="8" Padding="22" Margin="0,0,0,16"><StackPanel><TextBlock Text="03  /  Deploy your app" FontSize="20" FontWeight="SemiBold"/><TextBlock Text="Scan your subnet or enter a headset IP:port. Rename and select your headsets, then open Deploy and drop your APK and optional OBB files. Review the package/version and click Deploy.&#10;&#10;Use the same package name and signing key as the installed app. Older version codes are blocked. OBBs must keep their main.&lt;version&gt;.&lt;package&gt;.obb or patch.&lt;version&gt;.&lt;package&gt;.obb names. Existing unrelated OBB files are retained.&#10;&#10;Keep headsets powered, awake, and on Wi-Fi. Wireless ADB may need enabling again after reboot or an OS update. Router DHCP reservations help keep remembered addresses stable. Discovery uses IPv4 ADB port 5555; other ports can be entered manually.&#10;&#10;Deployments and offline queues run only while QuestTool is open. Cancel does not undo completed installs. An APK can install successfully before an OBB transfer fails; retry the full deployment before launching that app." TextWrapping="Wrap" LineHeight="23" Foreground="{StaticResource Muted}" Margin="0,10,0,0"/></StackPanel></Border>
+            <Border Background="{StaticResource Panel}" CornerRadius="8" Padding="22" Margin="0,0,0,16">
+              <StackPanel>
+                <TextBlock Text="04  /  Video &amp; proximity" FontSize="20" FontWeight="SemiBold"/>
+                <TextBlock Text="Standalone Meta casting requires Meta VR CLI (metavr.exe) and its own casting client. Use Install / repair below; Developer Hub's bundled client is a separate copy. OculusMirror requires the Meta Horizon / Oculus PC software and an active Link session." Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,8,0,14"/>
+                <StackPanel x:Name="MetaVrControls"><DockPanel><Button DockPanel.Dock="Right" Content="Choose metavr.exe" Click="ChooseMetaVrClick" Margin="8,0,0,0"/><Button DockPanel.Dock="Right" Content="Check tools" Click="CheckMediaToolsClick" Margin="8,0,0,0"/><TextBox x:Name="MetaVrPathBox" IsReadOnly="True"/></DockPanel><WrapPanel Margin="0,12,0,12"><Button Content="Install / repair casting client" Click="InstallCastingClick"/></WrapPanel><DockPanel><Button DockPanel.Dock="Right" Content="Choose OculusMirror.exe" Click="ChooseMirrorClick" Margin="8,0,0,0"/><TextBox x:Name="MirrorPathBox" IsReadOnly="True"/></DockPanel></StackPanel>
+                <Button Content="Meta VR CLI setup" Tag="https://github.com/meta-quest/agentic-tools" Click="OpenLinkClick" HorizontalAlignment="Left" Margin="0,12,0,0"/>
+              </StackPanel>
+            </Border>
+            <TextBlock Text="Headset names and addresses are stored locally. Deployment and file browsing require no companion headset app. Meta live view uses the Developer Hub casting service. This tool does not update Horizon OS." Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,0,0,16"/>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+      <TabItem Header="Activity log">
+        <Grid Margin="0,20,0,0"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions><Button Content="Save log…" Click="SaveLogClick" HorizontalAlignment="Left" Margin="0,0,0,12"/><TextBox x:Name="LogBox" Grid.Row="1" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12"/></Grid>
+      </TabItem>
+    </TabControl>
+    <Border Grid.Row="2" BorderBrush="#29394D" BorderThickness="0,1,0,0" Padding="0,13,0,0" Margin="0,16,0,0"><TextBlock x:Name="StatusText" Text="Starting…" TextWrapping="Wrap" Foreground="{StaticResource Muted}"/></Border>
+  </Grid>
+</Window>
