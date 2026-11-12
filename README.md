@@ -53,6 +53,8 @@ An APK and its OBB files aren't installed as one transaction. If an OBB fails af
 
 ## Files
 
+![Files](docs/screenshots/files.png)
+
 Open **Files**, choose a headset, and browse shared storage under `/sdcard`. Choose **Auto (USB first)**, **USB**, or **Wi-Fi** for the connection.
 
 You can upload or download files and folders, create folders, rename, move, and delete items. Replacements and deletions ask for confirmation. Existing folders aren't merged or overwritten; choose a new destination. Symbolic links are shown but can't be opened or transferred.
@@ -60,6 +62,8 @@ You can upload or download files and folders, create folders, rename, move, and 
 Transfers can be cancelled. If a download stalls, try USB or reconnect Wi-Fi. Headset storage permissions still apply to restricted folders.
 
 ## Monitoring and logs
+
+![Monitoring](docs/screenshots/monitoring.png)
 
 **Monitoring** shows battery, charging, storage, Wi-Fi, and connection status. Select a headset to expand its CPU, GPU, memory, temperature, and system details. Some firmware versions restrict individual metrics; these show as unavailable. Automatic checks run every 15 seconds while the tab is open and pause during other operations.
 
@@ -76,6 +80,8 @@ Changes apply to the headsets ticked in **Headsets**. Each selected headset must
 QuestTool doesn't save Wi-Fi passwords or include them in its activity/error messages. After changing networks, wait for wireless ADB to reconnect before unplugging USB.
 
 ## Live view and recording
+
+![Video](docs/screenshots/video.png)
 
 Open **Video** and choose a headset.
 

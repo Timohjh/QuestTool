@@ -29,7 +29,8 @@ $sourceFiles = @(
     'Tests/QuestTool.Tests.csproj', 'Tests/Program.cs', 'Tests/FileChecks.cs',
     'Tests/MediaChecks.cs', 'Tests/MonitoringChecks.cs', 'Tests/NetworkDetailsChecks.cs',
     'scripts/Package.ps1', 'docs/screenshots/headsets.png',
-    'docs/screenshots/deploy.png'
+    'docs/screenshots/deploy.png', 'docs/screenshots/monitoring.png',
+    'docs/screenshots/files.png', 'docs/screenshots/video.png'
 )
 
 foreach ($relative in $sourceFiles) {
