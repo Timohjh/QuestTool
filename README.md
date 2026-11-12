@@ -43,7 +43,7 @@ If you see **Enabled · PC cannot connect**, keep USB connected. Guest Wi-Fi iso
 3. Add a main and/or patch OBB if the app needs them.
 4. Check the displayed package and version, then click **Deploy to selected headsets**.
 
-Two headsets can install at once. Offline devices can wait for up to 30 minutes while QuestTool stays open. Use **Retry failed / cancelled** to retry selected targets that didn't finish.
+You can select multiple headsets for one deployment. QuestTool installs on up to **two headsets at a time**; the remaining selected headsets wait in the queue. Offline devices can wait for up to 30 minutes while QuestTool stays open. Use **Retry failed / cancelled** to retry selected targets that didn't finish.
 
 Updates preserve app data and reject older version codes. The APK must use the same package name and signing key as the installed app. Split APKs and AABs aren't supported.
 
