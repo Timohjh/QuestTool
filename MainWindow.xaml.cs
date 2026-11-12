@@ -381,7 +381,7 @@ public partial class MainWindow : Window
     }
     async void OnClosing(object? sender, CancelEventArgs e)
     {
-        if (finishingMedia) { e.Cancel = true; return; }
+        if (finishingMedia || stoppingMirror) { e.Cancel = true; return; }
         if (operation is not null || loadingFiles)
         {
             e.Cancel = true;

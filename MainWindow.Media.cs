@@ -11,6 +11,7 @@ public partial class MainWindow
     MediaService? media;
     readonly Dictionary<string, bool> proximityRequests = [];
     bool finishingMedia;
+    bool stoppingMirror;
     Process? mirrorProcess;
     bool MirrorRunning => mirrorProcess is not null && !mirrorProcess.HasExited;
     bool HasMediaState => MirrorRunning || media is not null && (media.Recording is not null || media.StreamingTarget is not null || media.DisabledProximity.Count > 0);
@@ -27,6 +28,7 @@ public partial class MainWindow
 
     void UpdateMediaControls(bool busy)
     {
+        busy |= stoppingMirror;
         bool session = media?.Recording is not null || media?.StreamingTarget is not null || MirrorRunning;
         MediaTargetControls.IsEnabled = !busy && !session;
         MetaVrControls.IsEnabled = !busy && !HasMediaState;
@@ -75,7 +77,7 @@ public partial class MainWindow
     {
         if (StreamingBackendBox.SelectedIndex == 1)
         {
-            if (operation is not null || loadingFiles || finishingMedia || MirrorRunning) return;
+            if (operation is not null || loadingFiles || finishingMedia || stoppingMirror || MirrorRunning) return;
             try
             {
                 SaveMirrorOptions();
@@ -102,11 +104,29 @@ public partial class MainWindow
 
     async void StopStreamClick(object sender, RoutedEventArgs e)
     {
+        if (operation is not null || loadingFiles || finishingMedia || stoppingMirror) return;
         if (MirrorRunning)
         {
-            try { await StopMirrorAsync(); StreamingStatus.Text = "OculusMirror closed."; Status(StreamingStatus.Text); }
-            catch (Exception ex) { Status(ex.Message); }
-            finally { UpdateMediaControls(false); }
+            stoppingMirror = true;
+            UpdateMediaControls(false);
+            StreamingStatus.Text = MediaStatus.Text = "Stopping OculusMirror…";
+            Status(MediaStatus.Text);
+            try
+            {
+                await StopMirrorAsync();
+                StreamingStatus.Text = MediaStatus.Text = "OculusMirror closed.";
+                Status(MediaStatus.Text); Log(MediaStatus.Text);
+            }
+            catch (Exception ex)
+            {
+                StreamingStatus.Text = MediaStatus.Text = ex.Message;
+                Status(ex.Message); Log(ex.Message);
+            }
+            finally
+            {
+                stoppingMirror = false;
+                UpdateMediaControls(operation is not null || loadingFiles || finishingMedia);
+            }
             return;
         }
         await RunMediaOperationAsync("Stopping live view…", async (service, _, token) =>
@@ -275,12 +295,10 @@ public partial class MainWindow
 
     async Task StopMirrorAsync()
     {
-        if (!MirrorRunning) return;
-        mirrorProcess!.CloseMainWindow();
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        try { await mirrorProcess.WaitForExitAsync(timeout.Token); }
-        catch (OperationCanceledException) { throw new IOException("OculusMirror has not closed. Close its window, then retry."); }
-        mirrorProcess.Dispose(); mirrorProcess = null;
+        var process = mirrorProcess;
+        if (process is null) return;
+        await MirrorOptions.StopAsync(process);
+        process.Dispose(); mirrorProcess = null;
     }
 
     void ChooseMirrorClick(object sender, RoutedEventArgs e)
