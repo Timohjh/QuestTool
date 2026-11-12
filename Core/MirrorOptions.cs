@@ -31,4 +31,30 @@ public sealed class MirrorOptions
         string program = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
         return new[] { "Meta Horizon", "Oculus" }.Select(folder => Path.Combine(program, folder, "Support", "oculus-diagnostics", "OculusMirror.exe")).FirstOrDefault(File.Exists) ?? "";
     }
+
+    public static async Task StopAsync(Process process)
+    {
+        try
+        {
+            process.Refresh();
+            if (process.HasExited) return;
+            if (process.CloseMainWindow() && await WaitForExitAsync(process)) return;
+            if (process.HasExited) return;
+
+            // A close request can fail or be ignored. Stop only our tracked instance,
+            // never every OculusMirror process or the Link runtime.
+            process.Kill();
+            if (!await WaitForExitAsync(process))
+                throw new IOException("OculusMirror has not stopped. Close its window, then retry.");
+        }
+        catch (InvalidOperationException) when (process.HasExited) { }
+        catch (System.ComponentModel.Win32Exception) when (process.HasExited) { }
+    }
+
+    static async Task<bool> WaitForExitAsync(Process process)
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        try { await process.WaitForExitAsync(timeout.Token); return true; }
+        catch (OperationCanceledException) { return false; }
+    }
 }

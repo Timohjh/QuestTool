@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using QuestTool.Core;
 
 static class MediaChecks
@@ -84,6 +85,36 @@ static class MediaChecks
         int count = cli.Commands.Count;
         await Reject(() => service.StartRecordingAsync(target, Path.Combine(temp, "cancelled.mp4"), 1024, 1024, cancel.Token), "Cancel recording before device mutation");
         check(cli.Commands.Count == count && service.Recording is null, "Cancelled start leaves no recording behind");
+        await MirrorStopAsync(check);
+    }
+
+    public static async Task MirrorStopAsync(Action<bool, string> check)
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        Process StartChild()
+        {
+            var info = new ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = false, CreateNoWindow = true };
+            if (Path.GetFileNameWithoutExtension(info.FileName).Equals("dotnet", StringComparison.OrdinalIgnoreCase))
+                info.ArgumentList.Add(typeof(MediaChecks).Assembly.Location);
+            info.ArgumentList.Add("--mirror-process-test");
+            return Process.Start(info) ?? throw new IOException("Could not start the process-stop test child.");
+        }
+
+        using var owned = StartChild();
+        using var external = StartChild();
+        try
+        {
+            await MirrorOptions.StopAsync(owned);
+            check(owned.HasExited, "Stop a tracked process even when it has no closable main window");
+            check(!external.HasExited, "Stopping one instance leaves another instance of the same executable running");
+            await MirrorOptions.StopAsync(owned);
+            check(owned.HasExited, "Stopping an already exited process is harmless");
+        }
+        finally
+        {
+            foreach (var child in new[] { owned, external })
+                if (!child.HasExited) { child.Kill(); await child.WaitForExitAsync(); }
+        }
     }
 
     sealed class MediaAdb : IAdb

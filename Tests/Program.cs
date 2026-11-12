@@ -3,6 +3,24 @@ using System.Text;
 using System.Security.Cryptography;
 using QuestTool.Core;
 
+if (args.SequenceEqual(new[] { "--mirror-process-test" }))
+{
+    await Task.Delay(TimeSpan.FromSeconds(30));
+    return;
+}
+
+if (args.SequenceEqual(new[] { "--mirror-stop-check" }))
+{
+    int count = 0;
+    await MediaChecks.MirrorStopAsync((condition, label) =>
+    {
+        if (!condition) throw new Exception("FAILED: " + label);
+        Console.WriteLine("PASS " + label); count++;
+    });
+    Console.WriteLine($"{count} OculusMirror process-stop checks passed.");
+    return;
+}
+
 if (args.Length == 3 && args[0] == "--device-details-check")
 {
     var adb = new AdbClient(args[1]);
