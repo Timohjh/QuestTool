@@ -12,6 +12,7 @@ public partial class MainWindow
     readonly DispatcherTimer monitorTimer = new() { Interval = TimeSpan.FromSeconds(5) };
     DateTime nextMonitorCheck;
     string capturedDeviceLogs = "";
+    string? deviceLogPackage;
     readonly ObservableCollection<WifiNetwork> wifiNetworks = [];
 
     static DeploymentTarget MonitorTarget(Headset h) => new(h.Serial, h.UsbTransport.Length > 0 ? h.UsbTransport : h.Transport, h.Endpoint);
@@ -122,9 +123,26 @@ public partial class MainWindow
     void DeviceLogHeadsetChanged(object sender, SelectionChangedEventArgs e)
     {
         capturedDeviceLogs = "";
+        deviceLogPackage = null;
+        UpdateDeviceLogScope();
         if (DeviceLogBox is null || DeviceLogStatus is null) return;
         DeviceLogBox.Clear();
         DeviceLogStatus.Text = "Read logs to capture the selected headset's recent output.";
+    }
+
+    void UpdateDeviceLogScope()
+    {
+        if (DeviceLogScope is null || ClearAppLogFilterButton is null) return;
+        DeviceLogScope.Text = deviceLogPackage is null ? "All apps" : "App: " + deviceLogPackage;
+        ClearAppLogFilterButton.Visibility = deviceLogPackage is null ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    async void ClearAppLogFilterClick(object sender, RoutedEventArgs e)
+    {
+        deviceLogPackage = null;
+        capturedDeviceLogs = ""; DeviceLogBox.Clear();
+        UpdateDeviceLogScope();
+        await RefreshDeviceLogsAsync();
     }
 
     void ApplyDeviceLogFilter()
@@ -147,14 +165,18 @@ public partial class MainWindow
     {
         if (DeviceLogHeadsetBox.SelectedItem is not Headset h) return;
         char priority = ((string)((ComboBoxItem)DeviceLogPriorityBox.SelectedItem).Tag)[0];
+        string? package = deviceLogPackage;
         try
         {
-            string logs = await new MonitoringService(Adb).ReadLogsAsync(MonitorTarget(h) with { Endpoint = h.Endpoint }, priority, token);
+            var target = MonitorTarget(h) with { Endpoint = h.Endpoint };
+            string logs = package is null
+                ? await new MonitoringService(Adb).ReadLogsAsync(target, priority, token)
+                : await new AppService(Adb).ReadLogsAsync(target, package, priority, token);
             token.ThrowIfCancellationRequested();
-            if (!ReferenceEquals(DeviceLogHeadsetBox.SelectedItem, h) || priority != ((string)((ComboBoxItem)DeviceLogPriorityBox.SelectedItem).Tag)[0]) return;
+            if (!ReferenceEquals(DeviceLogHeadsetBox.SelectedItem, h) || package != deviceLogPackage || priority != ((string)((ComboBoxItem)DeviceLogPriorityBox.SelectedItem).Tag)[0]) return;
             capturedDeviceLogs = logs;
             ApplyDeviceLogFilter();
-            DeviceLogStatus.Text = $"{h.Name} · {DateTime.Now:HH:mm:ss} · minimum priority {priority} · up to 1,000 recent lines. Save exports the displayed text.";
+            DeviceLogStatus.Text = $"{h.Name} · {DateTime.Now:HH:mm:ss} · minimum priority {priority} · up to 1,000 recent lines{(package is null ? "" : " filtered to the app's current running processes")}. Save exports the displayed text.";
             Status("Device logs loaded.");
         }
         catch (OperationCanceledException) { throw; }

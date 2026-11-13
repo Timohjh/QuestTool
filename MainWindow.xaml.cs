@@ -97,7 +97,12 @@ public partial class MainWindow : Window
         MonitorControls.IsEnabled = !busy;
         DeviceLogControls.IsEnabled = !busy;
         WifiControls.IsEnabled = !busy;
-        AppsControls.IsEnabled = !busy;
+        AppHeadsetBox.IsEnabled = !busy;
+        AppSystemBox.IsEnabled = !busy;
+        AppSearchBox.IsEnabled = !busy;
+        AppRefreshButton.IsEnabled = !busy;
+        AppsGrid.IsEnabled = !busy;
+        AppCancelButton.IsEnabled = busy && !loadingFiles;
         CancelButton.IsEnabled = busy;
         FileCancelButton.IsEnabled = busy && !loadingFiles;
         UpdateMediaControls(busy);
