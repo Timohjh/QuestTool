@@ -11,7 +11,6 @@ public partial class MainWindow
 {
     readonly DispatcherTimer monitorTimer = new() { Interval = TimeSpan.FromSeconds(5) };
     DateTime nextMonitorCheck;
-    DateTime nextWifiReconnect;
     string capturedDeviceLogs = "";
     readonly ObservableCollection<WifiNetwork> wifiNetworks = [];
 
@@ -19,43 +18,27 @@ public partial class MainWindow
 
     void InitializeMonitoring()
     {
-        Tabs.SelectionChanged += MonitoringTabSelected;
         monitorTimer.Tick += async (_, _) =>
         {
-            if (operation is not null || loadingFiles || finishingMedia || !File.Exists(settings.AdbPath)) return;
-            if (settings.AutoWifi && DateTime.UtcNow >= nextWifiReconnect)
-            {
-                nextWifiReconnect = DateTime.UtcNow.AddSeconds(30);
-                await RunOperationAsync("Reconnecting wireless ADB…", token => RefreshDevicesAsync(token, true), true);
-                return;
-            }
+            if (!IsActive || closingWindow || refreshTask is not null || operation is not null || loadingFiles || finishingMedia || !File.Exists(settings.AdbPath)) return;
             if (MonitorTab.IsSelected && MonitorAuto.IsChecked == true && DateTime.UtcNow >= nextMonitorCheck)
-                await RefreshMonitoringAsync(false, true);
+                await RefreshMonitoringAsync(false);
             else if (DeviceLogsTab.IsSelected && DeviceLogAuto.IsChecked == true && DeviceLogHeadsetBox.SelectedItem is Headset)
-                await RefreshDeviceLogsAsync(true);
+                await RefreshDeviceLogsAsync();
         };
         monitorTimer.Start();
-    }
-
-    async void MonitoringTabSelected(object sender, SelectionChangedEventArgs e)
-    {
-        if (!ReferenceEquals(e.OriginalSource, Tabs) || !IsLoaded) return;
-        if (MonitorTab.IsSelected) await RefreshMonitoringAsync(false);
-        if (DeviceLogsTab.IsSelected && DeviceLogHeadsetBox.SelectedItem is null)
-            DeviceLogHeadsetBox.SelectedItem = headsets.FirstOrDefault(h => h.Connection != "Offline" && h.Selected) ?? headsets.FirstOrDefault();
-        if (WifiTab.IsSelected && WifiHeadsetBox.SelectedItem is null)
-            WifiHeadsetBox.SelectedItem = headsets.FirstOrDefault(h => h.Connection != "Offline" && h.Selected) ?? headsets.FirstOrDefault();
     }
 
     async Task ReadMonitoringAsync(CancellationToken token)
     {
         var service = new MonitoringService(Adb);
-        foreach (var h in headsets.Where(h => h.Transport.Length > 0))
+        foreach (var h in headsets.Where(h => h.Transport.Length > 0).ToArray())
         {
             h.LastSeen = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             try
             {
                 var snapshot = await service.ReadAsync(MonitorTarget(h), token);
+                token.ThrowIfCancellationRequested();
                 h.Battery = snapshot.Battery; h.Storage = snapshot.Storage; h.Network = snapshot.Wifi;
                 h.MonitorStatus = "Updated";
                 if (ReferenceEquals(MonitorGrid.SelectedItem, h)) h.Details = await service.ReadDetailsAsync(MonitorTarget(h), token);
@@ -72,10 +55,11 @@ public partial class MainWindow
 
     async void MonitorSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (MonitorGrid.SelectedItem is not Headset h || operation is not null || !IsLoaded) return;
-        await RunOperationAsync("Reading headset details…", async token =>
+        if (MonitorGrid.SelectedItem is not Headset h || !IsLoaded) return;
+        await QueueRefreshAsync("Reading headset details…", async token =>
         {
             try { h.Details = await new MonitoringService(Adb).ReadDetailsAsync(MonitorTarget(h), token); Status("Headset details updated · " + h.Name); }
+            catch (OperationCanceledException) { throw; }
             catch (Exception ex) { h.Details = [new("Status", ex.Message)]; throw; }
         });
     }
@@ -85,27 +69,33 @@ public partial class MainWindow
         wifiNetworks.Clear();
         if (CurrentWifiText is null) return;
         CurrentWifiText.Text = WifiHeadsetBox.SelectedItem is Headset h ? h.Name + " · " + h.Network : "Choose a headset.";
-        if (IsLoaded && operation is null && WifiHeadsetBox.SelectedItem is Headset) await ScanWifiAsync();
+        if (IsLoaded && !selectingRefreshTargets && WifiHeadsetBox.SelectedItem is Headset) await ScanWifiAsync();
     }
 
     async void ScanWifiClick(object sender, RoutedEventArgs e) => await ScanWifiAsync();
     async Task ScanWifiAsync()
     {
-        if (WifiHeadsetBox.SelectedItem is not Headset h) { Status("Choose a headset to scan nearby Wi-Fi."); return; }
-        await RunOperationAsync("Scanning headset Wi-Fi…", async token =>
+        if (WifiHeadsetBox.SelectedItem is not Headset) { Status("Choose a headset to scan nearby Wi-Fi."); return; }
+        await QueueRefreshAsync("Scanning headset Wi-Fi…", ReadWifiAsync);
+    }
+
+    async Task ReadWifiAsync(CancellationToken token)
+    {
+        if (WifiHeadsetBox.SelectedItem is not Headset h) return;
+        try
         {
-            try
-            {
-                var scan = await new WifiService(Adb).ScanAsync(MonitorTarget(h), token);
-                wifiNetworks.Clear(); foreach (var network in scan.Networks) wifiNetworks.Add(network);
-                CurrentWifiText.Text = h.Name + " · " + scan.Current.Summary;
-                h.Network = scan.Current.Ssid ?? "Disconnected";
-                WifiScanStatus.Text = scan.Networks.Count + " network(s). " + scan.Notice;
-                WifiSsidBox.SelectedItem = scan.Networks.FirstOrDefault(n => n.Ssid == scan.Current.Ssid) ?? scan.Networks.FirstOrDefault();
-                Status("Wi-Fi networks loaded from " + h.Name + ".");
-            }
-            catch (Exception ex) { WifiScanStatus.Text = ex.Message; throw; }
-        });
+            var scan = await new WifiService(Adb).ScanAsync(MonitorTarget(h), token);
+            token.ThrowIfCancellationRequested();
+            if (!ReferenceEquals(WifiHeadsetBox.SelectedItem, h)) return;
+            wifiNetworks.Clear(); foreach (var network in scan.Networks) wifiNetworks.Add(network);
+            CurrentWifiText.Text = h.Name + " · " + scan.Current.Summary;
+            h.Network = scan.Current.Ssid ?? "Disconnected";
+            WifiScanStatus.Text = scan.Networks.Count + " network(s). " + scan.Notice;
+            WifiSsidBox.SelectedItem = scan.Networks.FirstOrDefault(n => n.Ssid == scan.Current.Ssid) ?? scan.Networks.FirstOrDefault();
+            Status("Wi-Fi networks loaded from " + h.Name + ".");
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) { if (ReferenceEquals(WifiHeadsetBox.SelectedItem, h)) WifiScanStatus.Text = ex.Message; throw; }
     }
 
     void WifiNetworkChanged(object sender, SelectionChangedEventArgs e)
@@ -126,7 +116,7 @@ public partial class MainWindow
         });
     }
 
-    Task RefreshMonitoringAsync(bool reconnect, bool automatic = false) => RunOperationAsync("Checking headset status…", token => RefreshDevicesAsync(token, reconnect), automatic);
+    Task RefreshMonitoringAsync(bool reconnect) => QueueRefreshAsync("Checking headset status…", token => RefreshDevicesAsync(token, reconnect));
     async void MonitorRefreshClick(object sender, RoutedEventArgs e) => await RefreshMonitoringAsync(true);
 
     void DeviceLogHeadsetChanged(object sender, SelectionChangedEventArgs e)
@@ -147,22 +137,28 @@ public partial class MainWindow
     void DeviceLogFilterChanged(object sender, TextChangedEventArgs e) => ApplyDeviceLogFilter();
     async void DeviceLogRefreshClick(object sender, RoutedEventArgs e) => await RefreshDeviceLogsAsync();
 
-    async Task RefreshDeviceLogsAsync(bool automatic = false)
+    async Task RefreshDeviceLogsAsync()
     {
-        if (DeviceLogHeadsetBox.SelectedItem is not Headset h) { Status("Choose a headset in Device logs first."); return; }
+        if (DeviceLogHeadsetBox.SelectedItem is not Headset) { Status("Choose a headset in Device logs first."); return; }
+        await QueueRefreshAsync("Reading device logs…", ReadDeviceLogsAsync);
+    }
+
+    async Task ReadDeviceLogsAsync(CancellationToken token)
+    {
+        if (DeviceLogHeadsetBox.SelectedItem is not Headset h) return;
         char priority = ((string)((ComboBoxItem)DeviceLogPriorityBox.SelectedItem).Tag)[0];
-        await RunOperationAsync("Reading device logs…", async token =>
+        try
         {
-            try
-            {
-                capturedDeviceLogs = await new MonitoringService(Adb).ReadLogsAsync(MonitorTarget(h) with { Endpoint = h.Endpoint }, priority, token);
-                ApplyDeviceLogFilter();
-                DeviceLogStatus.Text = $"{h.Name} · {DateTime.Now:HH:mm:ss} · minimum priority {priority} · up to 1,000 recent lines. Save exports the displayed text.";
-                Status("Device logs loaded.");
-            }
-            catch (OperationCanceledException) { DeviceLogStatus.Text = "Log read cancelled. Previous capture retained."; throw; }
-            catch (Exception ex) { DeviceLogStatus.Text = "Log read failed. Previous capture retained. " + ex.Message; throw; }
-        }, automatic);
+            string logs = await new MonitoringService(Adb).ReadLogsAsync(MonitorTarget(h) with { Endpoint = h.Endpoint }, priority, token);
+            token.ThrowIfCancellationRequested();
+            if (!ReferenceEquals(DeviceLogHeadsetBox.SelectedItem, h) || priority != ((string)((ComboBoxItem)DeviceLogPriorityBox.SelectedItem).Tag)[0]) return;
+            capturedDeviceLogs = logs;
+            ApplyDeviceLogFilter();
+            DeviceLogStatus.Text = $"{h.Name} · {DateTime.Now:HH:mm:ss} · minimum priority {priority} · up to 1,000 recent lines. Save exports the displayed text.";
+            Status("Device logs loaded.");
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) { if (ReferenceEquals(DeviceLogHeadsetBox.SelectedItem, h)) DeviceLogStatus.Text = "Log read failed. Previous capture retained. " + ex.Message; throw; }
     }
 
     void SaveDeviceLogClick(object sender, RoutedEventArgs e)

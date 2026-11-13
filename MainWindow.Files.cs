@@ -39,22 +39,6 @@ public partial class MainWindow
             await OpenDirectoryAsync(browsedPath);
     }
 
-    async void FilesTabSelected(object sender, RoutedEventArgs e)
-    {
-        if (ReferenceEquals(e.OriginalSource, Tabs) && MediaTab?.IsSelected == true)
-        {
-            if (MediaHeadsetBox.SelectedItem is null)
-                MediaHeadsetBox.SelectedItem = headsets.FirstOrDefault(h => h.Connection != "Offline" && h.Selected)
-                    ?? headsets.FirstOrDefault(h => h.Connection != "Offline") ?? headsets.FirstOrDefault();
-            return;
-        }
-        if (!ReferenceEquals(e.OriginalSource, Tabs) || FilesTab?.IsSelected != true || operation is not null || loadingFiles) return;
-        if (FileHeadsetBox.SelectedItem is null)
-            FileHeadsetBox.SelectedItem = headsets.FirstOrDefault(h => h.Connection != "Offline" && h.Selected)
-                ?? headsets.FirstOrDefault(h => h.Connection != "Offline") ?? headsets.FirstOrDefault();
-        else if (!ReferenceEquals(browsedHeadset, FileHeadsetBox.SelectedItem)) await OpenDirectoryAsync(FileService.Root);
-    }
-
     async void FileHeadsetChanged(object sender, SelectionChangedEventArgs e)
     {
         browsedHeadset = null; browsedPath = FileService.Root;
@@ -62,7 +46,7 @@ public partial class MainWindow
         if (FilePathBox is null || FileBrowserStatus is null) return;
         FilePathBox.Text = FileService.Root;
         FileBrowserStatus.Text = "Choose a headset to browse its shared storage.";
-        if (FileHeadsetBox.SelectedItem is Headset && FilesTab.IsSelected) await OpenDirectoryAsync(FileService.Root);
+        if (!selectingRefreshTargets && FileHeadsetBox.SelectedItem is Headset && FilesTab.IsSelected) await OpenDirectoryAsync(FileService.Root);
     }
 
     async Task RunFileOperationAsync(string title, Func<FileService, Headset, CancellationToken, Task> action)
@@ -80,7 +64,10 @@ public partial class MainWindow
     async Task ReadDirectoryAsync(FileService service, Headset headset, string path, CancellationToken token)
     {
         path = FileService.NormalizePath(path);
+        int connectionMode = FileConnectionBox.SelectedIndex;
         var entries = await service.ListAsync(FileTarget(headset), path, token);
+        token.ThrowIfCancellationRequested();
+        if (!ReferenceEquals(FileHeadsetBox.SelectedItem, headset) || connectionMode != FileConnectionBox.SelectedIndex) return;
         headsetFiles.Clear();
         foreach (var entry in entries) headsetFiles.Add(entry);
         browsedHeadset = headset; browsedPath = path; FilePathBox.Text = path;
@@ -88,7 +75,11 @@ public partial class MainWindow
         Status("Folder loaded. " + FileBrowserStatus.Text);
     }
 
-    async Task OpenDirectoryAsync(string path) => await RunFileOperationAsync("Opening headset folder…", (service, headset, token) => ReadDirectoryAsync(service, headset, path, token));
+    async Task OpenDirectoryAsync(string path)
+    {
+        if (FileHeadsetBox.SelectedItem is not Headset headset) { Status("Choose a headset in Files first."); return; }
+        await QueueRefreshAsync("Opening headset folder…", token => ReadDirectoryAsync(new FileService(Adb), headset, path, token));
+    }
     async void FileGoClick(object sender, RoutedEventArgs e) => await OpenDirectoryAsync(FilePathBox.Text);
     async void FileRefreshClick(object sender, RoutedEventArgs e) => await OpenDirectoryAsync(browsedPath);
     async void FileRootClick(object sender, RoutedEventArgs e) => await OpenDirectoryAsync(FileService.Root);
