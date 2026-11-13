@@ -35,6 +35,30 @@
           </DataGrid>
         </Grid>
       </TabItem>
+      <TabItem Header="Apps" x:Name="AppsTab">
+        <Grid x:Name="AppsControls" Margin="0,20,0,0">
+          <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+          <DockPanel Margin="0,0,0,14">
+            <Button DockPanel.Dock="Right" Content="Refresh apps" Click="AppRefreshClick" Margin="12,0,0,0"/>
+            <CheckBox x:Name="AppSystemBox" DockPanel.Dock="Right" Content="Include system apps" Click="AppSystemChanged" Margin="16,0,0,0"/>
+            <TextBlock DockPanel.Dock="Left" Text="Headset" VerticalAlignment="Center" Margin="0,0,12,0"/>
+            <ComboBox x:Name="AppHeadsetBox" MinWidth="260" HorizontalAlignment="Left" SelectionChanged="AppHeadsetChanged"><ComboBox.ItemTemplate><DataTemplate><StackPanel Orientation="Horizontal"><TextBlock Text="{Binding Name}" Foreground="#101925"/><TextBlock Text="{Binding Connection, StringFormat=  ·  {0}}" Foreground="#42546A"/></StackPanel></DataTemplate></ComboBox.ItemTemplate></ComboBox>
+          </DockPanel>
+          <DockPanel Grid.Row="1" Margin="0,0,0,14"><TextBlock DockPanel.Dock="Left" Text="Find app" VerticalAlignment="Center" Margin="0,0,12,0"/><TextBox x:Name="AppSearchBox" TextChanged="AppSearchChanged" ToolTip="Filter installed apps by package name."/></DockPanel>
+          <DataGrid x:Name="AppsGrid" Grid.Row="2" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True" HeadersVisibility="Column" GridLinesVisibility="None" Background="{StaticResource Panel}" BorderThickness="0" RowHeaderWidth="0" SelectionMode="Single" SelectionUnit="FullRow" SelectionChanged="AppSelectionChanged" RowDetailsVisibilityMode="VisibleWhenSelected" AreRowDetailsFrozen="True" HorizontalScrollBarVisibility="Disabled">
+            <DataGrid.Columns><DataGridTextColumn Header="App (package name)" Binding="{Binding Name}" Width="240"/><DataGridTextColumn Header="Package" Binding="{Binding Package}" Width="*"/></DataGrid.Columns>
+            <DataGrid.RowDetailsTemplate><DataTemplate>
+              <Expander Header="App details &amp; controls" IsExpanded="True" Margin="16,8,16,16" Foreground="#EEF3F9">
+                <StackPanel Margin="0,12,0,0">
+                  <TextBlock Text="{Binding Details}" TextWrapping="Wrap" LineHeight="24"/>
+                  <WrapPanel Margin="0,14,0,0"><Button Content="Launch" Click="LaunchAppClick" Background="#257968"/><Button Content="Close app" Click="CloseAppClick" ToolTip="Force-stop this app on the selected headset."/></WrapPanel>
+                </StackPanel>
+              </Expander>
+            </DataTemplate></DataGrid.RowDetailsTemplate>
+          </DataGrid>
+          <StackPanel Grid.Row="3" Margin="0,12,0,0"><TextBlock x:Name="AppsStatus" Text="Choose a headset to list its installed apps." Foreground="{StaticResource Muted}" TextWrapping="Wrap"/><TextBlock Text="Apps are identified by their Android package names. Close app force-stops the selected app on this headset." Foreground="{StaticResource Muted}" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"/></StackPanel>
+        </Grid>
+      </TabItem>
       <TabItem Header="Monitoring" x:Name="MonitorTab">
         <Grid Margin="0,20,0,0">
           <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>

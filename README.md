@@ -36,6 +36,12 @@ Use **Connect IP:port** for a known address or **Scan network** to find headsets
 
 If you see **Enabled · PC cannot connect**, keep USB connected. Guest Wi-Fi isolation, separate networks, routing, or firewall rules may be blocking the connection. Wireless ADB may need to be enabled again after a headset reboot. See [Meta's ADB guide](https://developers.meta.com/vr/documentation/native/android/ts-adb).
 
+## Manage installed apps
+
+Open **Apps** and choose a headset to list its installed apps. Search by package name, or enable **Include system apps** to show built-in packages too. Click an app row to expand its version name/code, install and update dates, APK path, and data folder.
+
+Use **Launch** or **Close app** in the expanded row to control that app on the chosen headset. Close app force-stops the package. Packages without a launchable activity report an error when launched. App names in the list are taken from their package identifiers.
+
 ## Install an app
 
 ![Deploy](docs/screenshots/deploy.png)

@@ -89,6 +89,7 @@ public partial class MainWindow
         try
         {
             if (FilesTab.IsSelected && FileHeadsetBox.SelectedItem is null) FileHeadsetBox.SelectedItem = headset;
+            if (AppsTab.IsSelected && AppHeadsetBox.SelectedItem is null) AppHeadsetBox.SelectedItem = headset;
             if (MediaTab.IsSelected && MediaHeadsetBox.SelectedItem is null) MediaHeadsetBox.SelectedItem = headset;
             if (DeviceLogsTab.IsSelected && DeviceLogHeadsetBox.SelectedItem is null) DeviceLogHeadsetBox.SelectedItem = headset;
             if (WifiTab.IsSelected && WifiHeadsetBox.SelectedItem is null) WifiHeadsetBox.SelectedItem = headset;
@@ -96,6 +97,7 @@ public partial class MainWindow
         finally { selectingRefreshTargets = false; }
 
         if (MonitorTab.IsSelected) await ReadMonitoringAsync(token);
+        else if (AppsTab.IsSelected) await ReadAppsAsync(token);
         else if (DeployTab.IsSelected) await ReadVersionsAsync(token);
         else if (FilesTab.IsSelected && FileHeadsetBox.SelectedItem is Core.Headset fileHeadset)
             await ReadDirectoryAsync(new Core.FileService(Adb), fileHeadset, browsedPath, token);

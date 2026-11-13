@@ -32,8 +32,8 @@ public partial class MainWindow : Window
     readonly Settings settings = new() { AdbPath = Environment.ProcessPath! };
     readonly List<Headset> headsets = [new() { Serial = "TEST", Selected = true, Connection = "USB" }];
     readonly TabControl Tabs = new();
-    readonly TabItem FilesTab = new(), MediaTab = new(), DeviceLogsTab = new(), WifiTab = new(), MonitorTab = new(), DeployTab = new();
-    readonly ComboBox FileHeadsetBox = new(), MediaHeadsetBox = new(), DeviceLogHeadsetBox = new(), WifiHeadsetBox = new();
+    readonly TabItem FilesTab = new(), MediaTab = new(), DeviceLogsTab = new(), WifiTab = new(), MonitorTab = new(), DeployTab = new(), AppsTab = new();
+    readonly ComboBox FileHeadsetBox = new(), MediaHeadsetBox = new(), DeviceLogHeadsetBox = new(), WifiHeadsetBox = new(), AppHeadsetBox = new();
     readonly ProgressBar RefreshProgress = new() { Visibility = Visibility.Collapsed };
     readonly TextBlock RefreshStatus = new();
     readonly string browsedPath = FileService.Root;
@@ -47,8 +47,8 @@ public partial class MainWindow : Window
     {
         ShowActivated = false; ShowInTaskbar = false; Opacity = 0;
         Width = 1; Height = 1; WindowStyle = WindowStyle.None;
-        foreach (var tab in new[] { new TabItem(), MonitorTab, FilesTab, MediaTab, DeviceLogsTab, WifiTab, DeployTab }) Tabs.Items.Add(tab);
-        foreach (var box in new[] { FileHeadsetBox, MediaHeadsetBox, DeviceLogHeadsetBox, WifiHeadsetBox })
+        foreach (var tab in new[] { new TabItem(), MonitorTab, AppsTab, FilesTab, MediaTab, DeviceLogsTab, WifiTab, DeployTab }) Tabs.Items.Add(tab);
+        foreach (var box in new[] { FileHeadsetBox, MediaHeadsetBox, DeviceLogHeadsetBox, WifiHeadsetBox, AppHeadsetBox })
         {
             box.ItemsSource = headsets;
             box.SelectionChanged += (_, _) => { if (selectingRefreshTargets) selectedDuringRefresh++; };
@@ -69,6 +69,7 @@ public partial class MainWindow : Window
         return Record("devices");
     }
     Task ReadMonitoringAsync(CancellationToken token) => Record("monitoring");
+    Task ReadAppsAsync(CancellationToken token) => Record("apps");
     Task ReadVersionsAsync(CancellationToken token) => Record("versions");
     Task ReadDirectoryAsync(FileService service, Headset headset, string path, CancellationToken token) => Record("files");
     Task ReadDeviceLogsAsync(CancellationToken token) => Record("logs");
@@ -145,14 +146,14 @@ public partial class MainWindow : Window
         await QueueRefreshAsync("Recovery", _ => { latest++; return Task.CompletedTask; });
         Check(latest == 3, "A later refresh succeeds after an earlier failure");
 
-        foreach (var (tab, expected) in new[] { (MonitorTab, "monitoring"), (FilesTab, "files"), (MediaTab, "video"), (DeviceLogsTab, "logs"), (WifiTab, "wifi"), (DeployTab, "versions") })
+        foreach (var (tab, expected) in new[] { (MonitorTab, "monitoring"), (AppsTab, "apps"), (FilesTab, "files"), (MediaTab, "video"), (DeviceLogsTab, "logs"), (WifiTab, "wifi"), (DeployTab, "versions") })
         {
             reads.Clear();
             Tabs.SelectedItem = tab;
             await (refreshTask ?? Task.CompletedTask);
             Check(reads.SequenceEqual(new[] { "devices", expected }), "Opening a tab refreshes fleet and relevant data: " + expected);
         }
-        Check(ReferenceEquals(FileHeadsetBox.SelectedItem, headsets[0]) && ReferenceEquals(WifiHeadsetBox.SelectedItem, headsets[0]) && selectedDuringRefresh == 4, "Opening a device tab selects an available headset under the selection-event guard");
+        Check(ReferenceEquals(FileHeadsetBox.SelectedItem, headsets[0]) && ReferenceEquals(WifiHeadsetBox.SelectedItem, headsets[0]) && selectedDuringRefresh == 5, "Opening a device tab selects an available headset under the selection-event guard");
 
         reads.Clear();
         unfocusedSince = Stopwatch.GetTimestamp() - 59 * Stopwatch.Frequency;
