@@ -138,7 +138,9 @@ public partial class MainWindow
         });
     }
 
-    async void RefreshStreamClick(object sender, RoutedEventArgs e) => await RunOperationAsync("Checking casting status…", async token =>
+    async void RefreshStreamClick(object sender, RoutedEventArgs e) => await QueueRefreshAsync("Checking casting status…", ReadStreamingStatusAsync);
+
+    async Task ReadStreamingStatusAsync(CancellationToken token)
     {
         try
         {
@@ -154,8 +156,9 @@ public partial class MainWindow
             MediaStatus.Text = StreamingStatus.Text;
             Status(MediaStatus.Text);
         }
+        catch (OperationCanceledException) { throw; }
         catch (Exception ex) { MediaStatus.Text = ex.Message; throw; }
-    });
+    }
 
     async void StartRecordingClick(object sender, RoutedEventArgs e)
     {

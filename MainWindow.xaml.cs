@@ -55,11 +55,12 @@ public partial class MainWindow : Window
         Loaded += async (_, _) =>
         {
             if (string.IsNullOrEmpty(settings.AdbPath)) { Tabs.SelectedItem = SetupTab; Status("Choose adb.exe in Setup to get started."); }
-            else await RunOperationAsync("Refreshing headsets…", RefreshAsync);
+            else await RefreshCurrentTabAsync();
         };
         UpdateCount();
         UpdateMediaControls(false);
         InitializeMonitoring();
+        InitializeRefresh();
     }
 
     void Status(string text) => StatusText.Text = text;
@@ -99,28 +100,28 @@ public partial class MainWindow : Window
         UpdateMediaControls(busy);
     }
 
-    async Task RunOperationAsync(string title, Func<CancellationToken, Task> action, bool automatic = false)
+    async Task RunOperationAsync(string title, Func<CancellationToken, Task> action, bool requiresAdb = true)
     {
         if (operation is not null || loadingFiles || finishingMedia) return;
-        if (!File.Exists(settings.AdbPath)) { Tabs.SelectedItem = SetupTab; Status("Choose adb.exe in Setup first."); return; }
+        if (requiresAdb && !File.Exists(settings.AdbPath)) { Tabs.SelectedItem = SetupTab; Status("Choose adb.exe in Setup first."); return; }
         HeadsetGrid.CommitEdit(DataGridEditingUnit.Cell, true);
         HeadsetGrid.CommitEdit(DataGridEditingUnit.Row, true);
         operation = new();
+        await StopRefreshAsync();
         SetBusy(true);
-        if (!automatic) { Status(title); Log(title); }
+        Status(title); Log(title);
         try { await action(operation.Token); }
         catch (OperationCanceledException) { Status("Operation cancelled. Completed changes are retained."); Log("Operation cancelled."); }
         catch (Exception ex) { Status(ex.Message); Log(ex.ToString()); }
-        finally { operation.Dispose(); operation = null; SetBusy(false); if (!automatic) SaveSettings(); UpdateCount(); }
+        finally { operation.Dispose(); operation = null; SetBusy(false); SaveSettings(); UpdateCount(); _ = ResumeRefreshAsync(); }
     }
 
     void UpdateCount() => FleetCount.Text = $"{headsets.Count(h => h.Connection != "Offline")} connected / {headsets.Count} remembered";
 
     Task RefreshAsync(CancellationToken token) => RefreshDevicesAsync(token, true);
 
-    async Task RefreshDevicesAsync(CancellationToken token, bool reconnect)
+    async Task RefreshDevicesAsync(CancellationToken token, bool reconnect, bool readMonitoring = true)
     {
-        if (reconnect) nextWifiReconnect = DateTime.UtcNow.AddSeconds(30);
         var devices = new DeviceService(Adb);
         var notices = new List<string>();
         var initial = await devices.ListAsync(message => { notices.Add(message); Log(message); }, token);
@@ -155,13 +156,17 @@ public partial class MainWindow : Window
                 catch (Exception ex) when (ex is not OperationCanceledException) { h.WifiStatus = "Reconnect failed"; Log($"{h.Name}: {ex.Message}"); }
             }
         }
+        var found = reconnect ? await devices.ListAsync(message => { notices.Add(message); Log(message); }, token) : initial;
+        token.ThrowIfCancellationRequested();
         foreach (var h in headsets)
         {
             h.Connection = "Offline"; h.Transport = ""; h.UsbTransport = "";
-            h.Battery = "—"; h.Storage = "—"; h.Network = "—"; h.MonitorStatus = "Offline";
+            if (!found.Any(d => d.Identity.Serial == h.Serial))
+            {
+                h.Battery = "—"; h.Storage = "—"; h.Network = "—"; h.MonitorStatus = "Offline";
+            }
             if (h.WifiStatus == "Connected · verified") h.WifiStatus = "Not connected";
         }
-        var found = await devices.ListAsync(message => { notices.Add(message); Log(message); }, token);
         foreach (var device in found.OrderBy(d => d.Wireless))
         {
             var h = Remember(device);
@@ -169,8 +174,8 @@ public partial class MainWindow : Window
             if (device.Wireless) { h.Endpoint = device.Transport; h.Transport = h.UsbTransport.Length > 0 ? h.UsbTransport : device.Transport; h.Connection = h.UsbTransport.Length > 0 ? "Wi-Fi + USB" : "Wi-Fi"; h.WifiStatus = "Connected · verified"; }
             else { h.UsbTransport = device.Transport; h.Transport = device.Transport; h.Connection = "USB"; }
         }
-        await ReadMonitoringAsync(token);
-        if (apk is not null && reconnect) await ReadVersionsAsync(token);
+        if (readMonitoring) await ReadMonitoringAsync(token);
+        if (readMonitoring && apk is not null && reconnect) await ReadVersionsAsync(token);
         UpdateCount();
         Status(notices.Count > 0 ? $"Refreshed. {notices[0]} See Activity log." : $"Ready · {headsets.Count(h => h.Connection != "Offline")} headset(s) connected.");
     }
@@ -179,23 +184,31 @@ public partial class MainWindow : Window
     {
         settings.AutoWifi = AutoWifiBox.IsChecked == true;
         SaveSettings();
-        nextWifiReconnect = DateTime.MinValue;
     }
 
     async Task ReadVersionsAsync(CancellationToken token)
     {
         var package = apk?.Package;
         if (package is null) return;
-        foreach (var h in headsets)
+        foreach (var h in headsets.ToArray())
         {
-            h.Version = "—";
-            if (h.Transport.Length == 0) continue;
-            try { h.Version = DeploymentService.ParseVersion((await Adb.RunAsync(["-s", h.Transport, "shell", "dumpsys", "package", package], token, 10)).RequireSuccess())?.ToString() ?? "Not installed"; }
+            if (h.Transport.Length == 0) { h.Version = "—"; continue; }
+            try
+            {
+                var result = await Adb.RunAsync(["-s", h.Transport, "shell", "dumpsys", "package", package], token, 10);
+                token.ThrowIfCancellationRequested();
+                if (apk?.Package != package) return;
+                h.Version = DeploymentService.ParseVersion(result.RequireSuccess())?.ToString() ?? "Not installed";
+            }
             catch (Exception ex) when (ex is not OperationCanceledException) { Log($"Version check for {h.Name}: {ex.Message}"); }
         }
     }
 
-    async void RefreshClick(object sender, RoutedEventArgs e) => await RunOperationAsync("Refreshing headsets…", RefreshAsync);
+    async void RefreshClick(object sender, RoutedEventArgs e)
+    {
+        if (!File.Exists(settings.AdbPath)) { Tabs.SelectedItem = SetupTab; Status("Choose adb.exe in Setup first."); return; }
+        await RefreshCurrentTabAsync();
+    }
     async void EnableWifiClick(object sender, RoutedEventArgs e) => await RunOperationAsync("Enabling wireless ADB…", async token =>
     {
         var selected = headsets.Where(h => h.Selected && h.UsbTransport.Length > 0).ToArray();
@@ -259,11 +272,13 @@ public partial class MainWindow : Window
     void SelectAllClick(object sender, RoutedEventArgs e) { foreach (var h in headsets) h.Selected = true; }
     void SelectNoneClick(object sender, RoutedEventArgs e) { foreach (var h in headsets) h.Selected = false; }
     void NameEdited(object? sender, DataGridCellEditEndingEventArgs e) => Dispatcher.BeginInvoke(new Action(SaveSettings));
-    void ForgetClick(object sender, RoutedEventArgs e)
+    async void ForgetClick(object sender, RoutedEventArgs e) => await RunOperationAsync("Forgetting selected headsets…", _ =>
     {
+        pendingRefresh = null;
         foreach (var h in headsets.Where(h => h.Selected).ToArray()) headsets.Remove(h);
-        SaveSettings(); UpdateCount(); Status("Selected headsets forgotten. Connected headsets can be found again with Refresh.");
-    }
+        Status("Selected headsets forgotten. Connected headsets can be found again with Refresh.");
+        return Task.CompletedTask;
+    }, requiresAdb: false);
 
     void ChooseAdbClick(object sender, RoutedEventArgs e)
     {
@@ -293,7 +308,9 @@ public partial class MainWindow : Window
     async Task LoadFilesAsync(string[] files)
     {
         if (operation is not null || loadingFiles) return;
-        loadingFiles = true; SetBusy(true); CancelButton.IsEnabled = false;
+        loadingFiles = true;
+        await StopRefreshAsync();
+        SetBusy(true); CancelButton.IsEnabled = false;
         try
         {
             if (files.Any(f => !File.Exists(f) || Path.GetExtension(f).ToLowerInvariant() is not (".apk" or ".obb"))) throw new InvalidDataException("Choose APK and OBB files only.");
@@ -313,7 +330,7 @@ public partial class MainWindow : Window
             Status("Files ready. Select your target headsets, then Deploy.");
         }
         catch (Exception ex) { Status(ex.Message); Log(ex.Message); }
-        finally { loadingFiles = false; SetBusy(false); }
+        finally { loadingFiles = false; SetBusy(false); _ = ResumeRefreshAsync(); }
     }
     void ClearFilesClick(object sender, RoutedEventArgs e)
     {
@@ -366,7 +383,7 @@ public partial class MainWindow : Window
         });
     }
 
-    void CancelClick(object sender, RoutedEventArgs e) { operation?.Cancel(); Status("Cancelling… Completed changes will be retained."); }
+    void CancelClick(object sender, RoutedEventArgs e) { pendingRefresh = null; operation?.Cancel(); refreshCancellation?.Cancel(); Status("Cancelling… Completed changes will be retained."); }
     void OpenLinkClick(object sender, RoutedEventArgs e)
     {
         try { Process.Start(new ProcessStartInfo((string)((Button)sender).Tag) { UseShellExecute = true }); }
@@ -381,11 +398,22 @@ public partial class MainWindow : Window
     }
     async void OnClosing(object? sender, CancelEventArgs e)
     {
+        if (closingWindow) { e.Cancel = true; return; }
         if (finishingMedia || stoppingMirror) { e.Cancel = true; return; }
         if (operation is not null || loadingFiles)
         {
             e.Cancel = true;
             Status("An operation is running. Click Cancel operation and wait for it to finish before closing.");
+            return;
+        }
+        if (refreshTask is not null)
+        {
+            e.Cancel = true;
+            closingWindow = true;
+            pendingRefresh = null;
+            await StopRefreshAsync();
+            closingWindow = false;
+            Close();
             return;
         }
         if (HasMediaState)

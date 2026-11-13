@@ -30,6 +30,8 @@ Keep USB connected for the initial setup. Connect the PC and headset to a networ
 
 Automatic wireless ADB setup and reconnection are enabled by default. Turn off **Automatically enable wireless ADB** in Headsets if you prefer to enable it manually.
 
+Use **Refresh** in the app header to update the current tab. QuestTool also refreshes on startup, when opening a tab, and when returning after at least 60 seconds away. Refreshes keep the controls available and retain the displayed data until new results arrive. Starting a device operation cancels an in-progress refresh; refresh requests during that operation wait until it finishes. Wireless reconnection runs with these refreshes instead of on a repeating timer.
+
 Use **Connect IP:port** for a known address or **Scan network** to find headsets that already have wireless ADB enabled. Scanning supports IPv4 subnets from /22 to /32 on port 5555. It can't authorize a new headset.
 
 If you see **Enabled · PC cannot connect**, keep USB connected. Guest Wi-Fi isolation, separate networks, routing, or firewall rules may be blocking the connection. Wireless ADB may need to be enabled again after a headset reboot. See [Meta's ADB guide](https://developers.meta.com/vr/documentation/native/android/ts-adb).
@@ -65,9 +67,9 @@ Transfers can be cancelled. If a download stalls, try USB or reconnect Wi-Fi. He
 
 ![Monitoring](docs/screenshots/monitoring.png)
 
-**Monitoring** shows battery, charging, storage, Wi-Fi, and connection status. Select a headset to expand its CPU, GPU, memory, temperature, and system details. Some firmware versions restrict individual metrics; these show as unavailable. Automatic checks run every 15 seconds while the tab is open and pause during other operations.
+**Monitoring** shows battery, charging, storage, Wi-Fi, and connection status. Select a headset to expand its CPU, GPU, memory, temperature, and system details. Some firmware versions restrict individual metrics; these show as unavailable. Optional automatic checks run every 15 seconds while the tab is open and the app has focus, and pause during other operations.
 
-**Device logs** captures up to 1,000 recent Android logcat lines from one headset. Choose a minimum priority, filter by text, and save the displayed output. Optional automatic refresh runs every five seconds while the tab is open.
+**Device logs** captures up to 1,000 recent Android logcat lines from one headset. Choose a minimum priority, filter by text, and save the displayed output. Optional automatic refresh runs every five seconds while the tab is open and the app has focus.
 
 **Activity log** records QuestTool's own operations separately from the headset logs.
 
@@ -114,6 +116,7 @@ Run the automated checks with:
 
 ```powershell
 dotnet run --project Tests/QuestTool.Tests.csproj
+dotnet run --project Tests/RefreshChecks/QuestTool.RefreshChecks.csproj
 ```
 
 These checks use simulated device connections. They don't replace testing with your APKs and headsets.

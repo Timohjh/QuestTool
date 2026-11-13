@@ -20,7 +20,7 @@ $sourceFiles = @(
     '.gitattributes', '.gitignore', 'LICENSE', 'README.md',
     'QuestTool.csproj', 'App.xaml', 'App.xaml.cs', 'GlobalUsings.cs',
     'MainWindow.xaml', 'MainWindow.xaml.cs', 'MainWindow.Files.cs',
-    'MainWindow.Media.cs', 'MainWindow.Monitoring.cs', 'Start-QuestTool.cmd',
+    'MainWindow.Media.cs', 'MainWindow.Monitoring.cs', 'MainWindow.Refresh.cs', 'Start-QuestTool.cmd',
     'Assets/QuestTool.svg', 'Assets/QuestTool.png', 'Assets/QuestTool.ico',
     'Core/AdbClient.cs', 'Core/ApkInfo.cs', 'Core/DeploymentService.cs',
     'Core/DeviceDetails.cs', 'Core/DeviceService.cs', 'Core/FileService.cs',
@@ -28,6 +28,7 @@ $sourceFiles = @(
     'Core/MonitoringService.cs', 'Core/WifiService.cs',
     'Tests/QuestTool.Tests.csproj', 'Tests/Program.cs', 'Tests/FileChecks.cs',
     'Tests/MediaChecks.cs', 'Tests/MonitoringChecks.cs', 'Tests/NetworkDetailsChecks.cs',
+    'Tests/RefreshChecks/QuestTool.RefreshChecks.csproj', 'Tests/RefreshChecks/Program.cs',
     'scripts/Package.ps1', 'docs/screenshots/headsets.png',
     'docs/screenshots/deploy.png', 'docs/screenshots/monitoring.png',
     'docs/screenshots/files.png', 'docs/screenshots/video.png'

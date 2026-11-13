@@ -2,10 +2,11 @@
   <Grid Margin="28,22">
     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
     <DockPanel Margin="0,0,0,22">
+      <Button x:Name="RefreshButton" DockPanel.Dock="Right" Content="Refresh" Click="RefreshClick" VerticalAlignment="Center" Margin="12,0,0,0" ToolTip="Refresh the current tab. Also refreshes when opening a tab or returning after 60 seconds away."/>
       <Border DockPanel.Dock="Right" Background="#203A3E" CornerRadius="6" Padding="12,8" VerticalAlignment="Center"><TextBlock Text="LOCAL NETWORK  /  ADB" Foreground="#89E2C6" FontSize="12" FontWeight="SemiBold"/></Border>
       <StackPanel Orientation="Horizontal"><Image Source="Assets/QuestTool.png" Width="54" Height="54" Margin="0,0,14,0" VerticalAlignment="Center"/><StackPanel><TextBlock Text="QuestTool" FontSize="30" FontWeight="SemiBold"/><TextBlock Text="Your headset fleet. One deployment." Foreground="{StaticResource Muted}" Margin="0,4,0,0"/></StackPanel></StackPanel>
     </DockPanel>
-    <TabControl x:Name="Tabs" Grid.Row="1" Background="#0E1621" BorderThickness="0" SelectionChanged="FilesTabSelected">
+    <TabControl x:Name="Tabs" Grid.Row="1" Background="#0E1621" BorderThickness="0">
       <TabItem Header="Headsets">
         <Grid Margin="0,20,0,0">
           <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
@@ -37,7 +38,7 @@
       <TabItem Header="Monitoring" x:Name="MonitorTab">
         <Grid Margin="0,20,0,0">
           <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-          <WrapPanel x:Name="MonitorControls" Margin="0,0,0,14"><Button Content="Check devices now" Click="MonitorRefreshClick"/><CheckBox x:Name="MonitorAuto" Content="Auto-check every 15 seconds while this tab is open" IsChecked="True"/></WrapPanel>
+          <WrapPanel x:Name="MonitorControls" Margin="0,0,0,14"><Button Content="Check devices now" Click="MonitorRefreshClick"/><CheckBox x:Name="MonitorAuto" Content="Auto-check every 15 seconds while this tab is open" IsChecked="False"/></WrapPanel>
           <DataGrid x:Name="MonitorGrid" Grid.Row="1" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True" HeadersVisibility="Column" GridLinesVisibility="None" Background="{StaticResource Panel}" BorderThickness="0" RowHeaderWidth="0" SelectionMode="Single" SelectionChanged="MonitorSelectionChanged" RowDetailsVisibilityMode="VisibleWhenSelected">
             <DataGrid.RowDetailsTemplate><DataTemplate><Expander Header="CPU, GPU, memory, temperatures &amp; system details" IsExpanded="True" Margin="16,8,16,16"><ItemsControl ItemsSource="{Binding Details}" Margin="0,12,0,0"><ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel MaxWidth="1080"/></ItemsPanelTemplate></ItemsControl.ItemsPanel><ItemsControl.ItemTemplate><DataTemplate><StackPanel Width="250" Margin="0,0,16,12"><TextBlock Text="{Binding Name}" Foreground="{StaticResource Muted}" FontSize="12"/><TextBlock Text="{Binding Value}" TextWrapping="Wrap" Margin="0,3,0,0"/></StackPanel></DataTemplate></ItemsControl.ItemTemplate></ItemsControl></Expander></DataTemplate></DataGrid.RowDetailsTemplate>
             <DataGrid.Columns>
@@ -83,7 +84,7 @@
           </StackPanel>
         </ScrollViewer>
       </TabItem>
-      <TabItem Header="Deploy">
+      <TabItem Header="Deploy" x:Name="DeployTab">
         <Grid Margin="0,20,0,0">
           <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
           <Border x:Name="DropZone" AllowDrop="True" DragOver="FilesDragOver" Drop="FilesDrop" BorderBrush="#4B8E94" BorderThickness="2" Background="#142A32" CornerRadius="10" Padding="24" Margin="0,0,0,14">
@@ -244,6 +245,6 @@
         <Grid Margin="0,20,0,0"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions><Button Content="Save log…" Click="SaveLogClick" HorizontalAlignment="Left" Margin="0,0,0,12"/><TextBox x:Name="LogBox" Grid.Row="1" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12"/></Grid>
       </TabItem>
     </TabControl>
-    <Border Grid.Row="2" BorderBrush="#29394D" BorderThickness="0,1,0,0" Padding="0,13,0,0" Margin="0,16,0,0"><TextBlock x:Name="StatusText" Text="Starting…" TextWrapping="Wrap" Foreground="{StaticResource Muted}"/></Border>
+    <Border Grid.Row="2" BorderBrush="#29394D" BorderThickness="0,1,0,0" Padding="0,13,0,0" Margin="0,16,0,0"><DockPanel><StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="16,0,0,0"><ProgressBar x:Name="RefreshProgress" Width="60" Height="5" IsIndeterminate="True" Visibility="Collapsed" Foreground="#89E2C6" Background="#29415A" BorderThickness="0" Margin="0,0,10,0"/><TextBlock x:Name="RefreshStatus" Foreground="{StaticResource Muted}" VerticalAlignment="Center"/></StackPanel><TextBlock x:Name="StatusText" Text="Starting…" TextWrapping="Wrap" Foreground="{StaticResource Muted}"/></DockPanel></Border>
   </Grid>
 </Window>
