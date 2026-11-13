@@ -27,6 +27,8 @@ public partial class MainWindow : Window
         HeadsetGrid.ItemsSource = headsets;
         DeployGrid.ItemsSource = headsets;
         FileHeadsetBox.ItemsSource = headsets;
+        AppHeadsetBox.ItemsSource = headsets;
+        AppsGrid.ItemsSource = installedApps;
         MediaHeadsetBox.ItemsSource = headsets;
         MonitorGrid.ItemsSource = headsets;
         DeviceLogHeadsetBox.ItemsSource = headsets;
@@ -95,6 +97,12 @@ public partial class MainWindow : Window
         MonitorControls.IsEnabled = !busy;
         DeviceLogControls.IsEnabled = !busy;
         WifiControls.IsEnabled = !busy;
+        AppHeadsetBox.IsEnabled = !busy;
+        AppSystemBox.IsEnabled = !busy;
+        AppSearchBox.IsEnabled = !busy;
+        AppRefreshButton.IsEnabled = !busy;
+        AppsGrid.IsEnabled = !busy;
+        AppCancelButton.IsEnabled = busy && !loadingFiles;
         CancelButton.IsEnabled = busy;
         FileCancelButton.IsEnabled = busy && !loadingFiles;
         UpdateMediaControls(busy);

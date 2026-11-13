@@ -9,6 +9,30 @@ if (args.SequenceEqual(new[] { "--mirror-process-test" }))
     return;
 }
 
+if (args.SequenceEqual(new[] { "--apps-check" }))
+{
+    int count = 0;
+    await AppChecks.RunAsync((condition, label) =>
+    {
+        if (!condition) throw new Exception("FAILED: " + label);
+        Console.WriteLine("PASS " + label); count++;
+    });
+    Console.WriteLine($"{count} app checks passed.");
+    return;
+}
+
+if (args.Length == 3 && args[0] == "--apps-device-check")
+{
+    var service = new AppService(new AdbClient(args[1]));
+    var target = new DeploymentTarget(args[2], args[2], "");
+    var apps = await service.ListAsync(target, false, default);
+    if (apps.Count == 0) throw new Exception("Expected installed user apps.");
+    string details = await service.ReadDetailsAsync(target, apps[0].Package, default);
+    if (details.Contains("Version: Unavailable") || details.Contains("Version code: Unavailable")) throw new Exception("Version details missing.");
+    Console.WriteLine($"PASS Read {apps.Count} installed user apps and selected app version/details from connected headset.");
+    return;
+}
+
 if (args.SequenceEqual(new[] { "--mirror-stop-check" }))
 {
     int count = 0;

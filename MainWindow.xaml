@@ -35,6 +35,45 @@
           </DataGrid>
         </Grid>
       </TabItem>
+      <TabItem Header="Apps" x:Name="AppsTab">
+        <Grid x:Name="AppsControls" Margin="0,20,0,0">
+          <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+          <DockPanel Margin="0,0,0,14">
+            <Button x:Name="AppRefreshButton" DockPanel.Dock="Right" Content="Refresh apps" Click="AppRefreshClick" Margin="12,0,0,0"/>
+            <CheckBox x:Name="AppSystemBox" DockPanel.Dock="Right" Content="Include system apps" Click="AppSystemChanged" Margin="16,0,0,0"/>
+            <TextBlock DockPanel.Dock="Left" Text="Headset" VerticalAlignment="Center" Margin="0,0,12,0"/>
+            <ComboBox x:Name="AppHeadsetBox" MinWidth="260" HorizontalAlignment="Left" SelectionChanged="AppHeadsetChanged"><ComboBox.ItemTemplate><DataTemplate><StackPanel Orientation="Horizontal"><TextBlock Text="{Binding Name}" Foreground="#101925"/><TextBlock Text="{Binding Connection, StringFormat=  ·  {0}}" Foreground="#42546A"/></StackPanel></DataTemplate></ComboBox.ItemTemplate></ComboBox>
+          </DockPanel>
+          <DockPanel Grid.Row="1" Margin="0,0,0,14"><TextBlock DockPanel.Dock="Left" Text="Find app" VerticalAlignment="Center" Margin="0,0,12,0"/><TextBox x:Name="AppSearchBox" TextChanged="AppSearchChanged" ToolTip="Filter installed apps by package name."/></DockPanel>
+          <DataGrid x:Name="AppsGrid" Grid.Row="2" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True" HeadersVisibility="Column" GridLinesVisibility="None" Background="{StaticResource Panel}" BorderThickness="0" RowHeaderWidth="0" SelectionMode="Single" SelectionUnit="FullRow" SelectionChanged="AppSelectionChanged" RowDetailsVisibilityMode="VisibleWhenSelected" AreRowDetailsFrozen="True" HorizontalScrollBarVisibility="Disabled" VirtualizingPanel.ScrollUnit="Pixel">
+            <DataGrid.Columns><DataGridTextColumn Header="App (package name)" Binding="{Binding Name}" Width="240"/><DataGridTextColumn Header="Package" Binding="{Binding Package}" Width="*"/></DataGrid.Columns>
+            <DataGrid.RowDetailsTemplate><DataTemplate>
+              <Expander Header="App details &amp; controls" IsExpanded="True" Margin="16,8,16,16" Foreground="#EEF3F9">
+                <Grid Margin="0,12,0,0">
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="410"/></Grid.ColumnDefinitions>
+                  <TextBlock Text="{Binding Details}" TextWrapping="Wrap" LineHeight="24" Margin="0,0,24,0"/>
+                  <StackPanel Grid.Column="1">
+                    <TextBlock Text="APP CONTROLS" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource Muted}" Margin="0,0,0,8"/>
+                    <WrapPanel Margin="0,0,0,14"><Button Content="Launch" Tag="launch" Click="AppActionClick" Background="#257968"/><Button Content="Restart" Tag="restart" Click="AppActionClick"/><Button Content="Close app" Tag="close" Click="AppActionClick" ToolTip="Force-stop this app on the selected headset."/></WrapPanel>
+                    <TextBlock Text="TOOLS" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource Muted}" Margin="0,0,0,8"/>
+                    <WrapPanel><Button Content="App settings" Tag="settings" Click="AppActionClick" Margin="0,0,8,8"/><Button Content="Show logs" Tag="logs" Click="AppActionClick" Margin="0,0,8,8"/><Button Content="Export APK…" Tag="export" Click="AppActionClick" Margin="0,0,8,8" ToolTip="Export the base APK and all split APKs to a new folder. App data and OBB files are not included."/><Button Content="Copy package name" Tag="copy" Click="AppActionClick" Margin="0,0,8,8"/><Button Content="Clear cache…" Tag="cache" Click="AppActionClick" Margin="0,0,8,8" ToolTip="Remove temporary cache only; keep saved app data."/></WrapPanel>
+                    <Expander Header="Manage data &amp; uninstall" Foreground="#F0B6B6" Margin="0,8,0,0">
+                      <Border Background="#382932" CornerRadius="6" Padding="12" Margin="0,8,0,0"><StackPanel>
+                        <TextBlock Text="These actions remove data for the current headset user and require confirmation." TextWrapping="Wrap" FontSize="12" Margin="0,0,0,10"/>
+                        <WrapPanel><Button Content="Clear app data…" Tag="data" Click="AppActionClick" Background="#663C47" Margin="0,0,8,8"/><Button Content="Uninstall…" Tag="uninstall" Click="AppActionClick" Background="#813F4C" Margin="0,0,0,8"/></WrapPanel>
+                      </StackPanel></Border>
+                    </Expander>
+                  </StackPanel>
+                </Grid>
+              </Expander>
+            </DataTemplate></DataGrid.RowDetailsTemplate>
+          </DataGrid>
+          <DockPanel Grid.Row="3" Margin="0,12,0,0">
+            <Button x:Name="AppCancelButton" DockPanel.Dock="Right" Content="Cancel operation" Click="CancelClick" IsEnabled="False" VerticalAlignment="Top" Padding="12,6" Margin="16,0,0,0"/>
+            <StackPanel><TextBlock x:Name="AppsStatus" Text="Choose a headset to list its installed apps." Foreground="{StaticResource Muted}" TextWrapping="Wrap"/><TextBlock Text="Apps are identified by their Android package names. Close app force-stops the selected app on this headset." Foreground="{StaticResource Muted}" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"/></StackPanel>
+          </DockPanel>
+        </Grid>
+      </TabItem>
       <TabItem Header="Monitoring" x:Name="MonitorTab">
         <Grid Margin="0,20,0,0">
           <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
@@ -62,6 +101,8 @@
             <ComboBox x:Name="DeviceLogPriorityBox" Width="130" SelectedIndex="2" Margin="0,0,8,8"><ComboBoxItem Content="Verbose" Tag="V"/><ComboBoxItem Content="Debug" Tag="D"/><ComboBoxItem Content="Info" Tag="I"/><ComboBoxItem Content="Warning" Tag="W"/><ComboBoxItem Content="Error" Tag="E"/><ComboBoxItem Content="Fatal" Tag="F"/></ComboBox>
             <Button Content="Read logs" Click="DeviceLogRefreshClick" Margin="0,0,8,8"/><Button Content="Save logs…" Click="SaveDeviceLogClick" Margin="0,0,8,8"/>
             <CheckBox x:Name="DeviceLogAuto" Content="Auto-refresh every 5 seconds" Margin="0,0,0,8"/>
+            <TextBlock x:Name="DeviceLogScope" Text="All apps" VerticalAlignment="Center" Foreground="{StaticResource Muted}" Margin="12,0,8,8"/>
+            <Button x:Name="ClearAppLogFilterButton" Content="Show all apps" Click="ClearAppLogFilterClick" Visibility="Collapsed" Margin="0,0,8,8"/>
           </WrapPanel>
           <DockPanel Grid.Row="1" Margin="0,0,0,12"><TextBlock Text="Find text" DockPanel.Dock="Left" VerticalAlignment="Center" Margin="0,0,12,0"/><TextBox x:Name="DeviceLogFilterBox" TextChanged="DeviceLogFilterChanged" ToolTip="Case-insensitive filter of the captured lines."/></DockPanel>
           <TextBox x:Name="DeviceLogBox" Grid.Row="2" IsReadOnly="True" FontFamily="Consolas" FontSize="12" TextWrapping="NoWrap" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>

@@ -36,6 +36,16 @@ Use **Connect IP:port** for a known address or **Scan network** to find headsets
 
 If you see **Enabled · PC cannot connect**, keep USB connected. Guest Wi-Fi isolation, separate networks, routing, or firewall rules may be blocking the connection. Wireless ADB may need to be enabled again after a headset reboot. See [Meta's ADB guide](https://developers.meta.com/vr/documentation/native/android/ts-adb).
 
+## Manage installed apps
+
+Open **Apps** and choose a headset to list its installed apps. Search by package name, or enable **Include system apps** to show built-in packages too. Click an app row to expand its version name/code, install and update dates, APK path, and data folder.
+
+The expanded row groups **Launch**, **Restart**, and **Close app** under app controls. Close app force-stops the package. Packages without a launchable activity report an error when launched. App names in the list are taken from their package identifiers.
+
+Tools include **App settings**, **Show logs**, **Export APK**, **Copy package name**, and **Clear cache**. Show logs opens Device logs filtered to the app's currently running main and child processes; use **Show all apps** to remove that scope. APK export creates a new local folder containing the base APK and any split APKs, without app data or OBB files. Cache clearing preserves saved app data and reports unsupported firmware instead of resetting the app.
+
+Expand **Manage data & uninstall** for **Clear app data** and **Uninstall**. Both apply to the current headset user and require confirmation showing the package and headset. Clearing app data deletes saved settings, sign-ins, and progress. Uninstall removes the app and its data for that user.
+
 ## Install an app
 
 ![Deploy](docs/screenshots/deploy.png)
